@@ -1,0 +1,7 @@
+-I/home/mdhoff/src/esp-idf/components/freertos/FreeRTOS-Kernel/include/
+-I/home/mdhoff/src/esp-idf/components/freertos/config/include/
+-I/home/mdhoff/src/core2/tameshgotchi/managed_components/espressif__m5stack_core_2/include/
+-I/home/mdhoff/src/core2/tameshgotchi/managed_components/espressif__esp_lvgl_port/include/
+-I/home/mdhoff/src/core2/tameshgotchi/managed_components/lvgl__lvgl/
+-I/home/mdhoff/src/core2/tameshgotchi/managed_components/lvgl__lvgl/src/
+-I/home/mdhoff/src/core2/tameshgotchi/managed_components/lvgl__lvgl/demos/
