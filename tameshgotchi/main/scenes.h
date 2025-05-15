@@ -40,6 +40,15 @@
 
 typedef enum {
 
+	SPRITE_ZERO,
+	SPRITE_CHERRY,
+	SPRITE_ICE,
+	SPRITE_GRAPE,
+	SPRITE_BAJA_BLAST
+} sprite_s;
+
+typedef enum {
+
 	MAIN_SCENE_MEADOW,
 	MAIN_SCENE_BEACH,
 	MAIN_SCENE_FOREST,
