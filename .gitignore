@@ -6,6 +6,7 @@
 build/
 *.tar
 /.west/
+zephyr-env
 
 # Prerequisites
 *.d
