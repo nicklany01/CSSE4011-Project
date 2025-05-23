@@ -1,16 +1,5 @@
-*.zip
-/modules/
-/zephyr/
-/tools/
-/bootloader/
-build/
-*.tar
-/.west/
-
 # Prerequisites
 *.d
-*build*
-*.cache*
 
 # Object files
 *.o
