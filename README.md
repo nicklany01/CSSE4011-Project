@@ -1,6 +1,7 @@
 # Project
 
 ## Project Structure
+```
 /mycode
     ├── CMakeLists.txt
     ├── include
@@ -19,3 +20,4 @@
     ├── west.yml
     └── zephyr
         └── module.yml
+```
