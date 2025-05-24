@@ -1,8 +1,24 @@
 #ifndef SOUND_H
 #define SOUND_H
 
-#define SAMPLE_RATE 16000
-#define FREQUENCY 440
-#define DURATION_MS 1000
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/i2s.h>
+
+/**
+ * @brief Initialize the sound system
+ * @return 0 on success, negative error code on failure
+ */
+int sound_init(void);
+
+/**
+ * @brief Play the sound
+ * @return 0 on success, negative error code on failure
+ */
+int sound_play(void);
+
+/**
+ * @brief Clean up sound resources
+ */
+void sound_cleanup(void);
 
 #endif
