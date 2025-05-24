@@ -7,7 +7,7 @@
 #include "personality.h"
 #include "journal.h"
 
-#define PETCO_MF_ID 0x4369
+#define SIENNA_MF_ID 0x4369
 
 #define BLE_SERV_UUID16_PPY 0x4369
 #define BLE_SERV_UUID16_PEX 0xCAFE
@@ -22,8 +22,10 @@ typedef struct {
 	main_scenes_e fav_scene;
 	mod_weather_e fav_weather;
 	mod_time_e fav_time;
+	mod_temp_e fav_temp;
 
 	foods_e fav_food;
+	drinks_e fav_drink;
 
 	uint16_t weights[PET_ATTR_NEG_MAX];
 } pet_personality_pkt_s;
@@ -34,6 +36,7 @@ typedef struct {
 	mod_weather_e scene_weather;
 	mod_mood_e scene_mood;
 	mod_time_e scene_time;
+	mod_temp_e scene_temp;
 
 	foods_e held_food;
 	drinks_e held_drink;

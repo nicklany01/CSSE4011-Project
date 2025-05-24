@@ -33,7 +33,10 @@ void serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer) 
 	buffer[offset++] = pkt->fav_scene;
 	buffer[offset++] = pkt->fav_weather;
 	buffer[offset++] = pkt->fav_time;
+	buffer[offset++] = pkt->fav_temp;
+
 	buffer[offset++] = pkt->fav_food;
+	buffer[offset++] = pkt->fav_drink;
 
 	for (int i = 0; i < PET_ATTR_NEG_MAX; i++) {
 		e_u16(pkt->weights[i], buffer + offset);
@@ -52,7 +55,10 @@ bool deserialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer
 	pkt->fav_scene = buffer[offset++];
 	pkt->fav_weather = buffer[offset++];
 	pkt->fav_time = buffer[offset++];
+	pkt->fav_temp = buffer[offset++];
+
 	pkt->fav_food = buffer[offset++];
+	pkt->fav_drink = buffer[offset++];
 
 	for (int i = 0; i < PET_ATTR_NEG_MAX; i++) {
 		pkt->weights[i] = d_u16(buffer + offset);
@@ -72,6 +78,7 @@ void serialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *bu
 	buffer[offset++] = pkt->scene_weather;
 	buffer[offset++] = pkt->scene_mood;
 	buffer[offset++] = pkt->scene_time;
+	buffer[offset++] = pkt->scene_temp;
 
 	buffer[offset++] = pkt->held_food;
 	buffer[offset++] = pkt->held_drink;
@@ -86,6 +93,7 @@ bool deserialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *
 	pkt->scene_weather = buffer[offset++];
 	pkt->scene_mood = buffer[offset++];
 	pkt->scene_time = buffer[offset++];
+	pkt->scene_temp = buffer[offset++];
 
 	pkt->held_food = buffer[offset++];
 	pkt->held_drink = buffer[offset++];
@@ -120,8 +128,3 @@ bool deserialize_pet_exchange_journal_pkt(pet_exchange_journal_pkt_s *pkt, uint8
 
 	return true;
 }
-
-
-
-
-

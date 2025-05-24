@@ -91,6 +91,17 @@ typedef enum {
 	MOD_TIME_MAX
 } mod_time_e;
 
+typedef enum {
+
+	TEMP_FRIGID,
+	TEMP_COLD,
+	TEMP_NEUTRAL,
+	TEMP_WARM,
+	TEMP_BOILING,
+
+	TEMP_MAX
+} mod_temp_e;
+
 typedef struct {
 
 	main_scenes_e main_scene;
