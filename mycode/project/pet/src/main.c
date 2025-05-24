@@ -1,177 +1,188 @@
-// #include <zephyr/kernel.h>
-// #include <zephyr/fs/fs.h>
-// #include <zephyr/logging/log.h>
-
-// LOG_MODULE_REGISTER(main);
-
-// #define MAX_PATH_LEN 255
-// #define MOUNT_POINT "/lfs1"
-
-// void main(void)
-// {
-//     struct fs_file_t file;
-//     char path[MAX_PATH_LEN];
-//     char read_buf[64];
-//     ssize_t bytes_read;
-//     int rc;
-
-//     snprintf(path, sizeof(path), "%s/hello.txt", MOUNT_POINT);
-//     fs_file_t_init(&file);
-
-//     rc = fs_open(&file, path, FS_O_CREATE | FS_O_WRITE);
-//     if (rc < 0) {
-//         LOG_ERR("Failed to create file: %d", rc);
-//         return;
-//     }
-
-//     rc = fs_write(&file, "Hello World!", strlen("Hello World!"));
-//     if (rc < 0) {
-//         LOG_ERR("Failed to write to file: %d", rc);
-//         fs_close(&file);
-//         return;
-//     }
-
-//     LOG_INF("File created and written successfully");
-//     fs_close(&file);
-
-//     rc = fs_open(&file, path, FS_O_READ);
-//     if (rc < 0) {
-//         LOG_ERR("Failed to open file for reading: %d", rc);
-//         return;
-//     }
-
-//     bytes_read = fs_read(&file, read_buf, sizeof(read_buf));
-//     if (bytes_read < 0) {
-//         LOG_ERR("Failed to read file: %d", bytes_read);
-//     } else {
-//         read_buf[bytes_read] = '\0';
-//         LOG_INF("Read from file: %s", read_buf);
-//     }
-
-//     fs_close(&file);
-
-// }
-
-
-#include <stdio.h>
 #include <zephyr/kernel.h>
-#include <zephyr/drivers/i2s.h>
-#include <zephyr/sys/iterable_sections.h>
+#include <zephyr/fs/fs.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/drivers/display.h>
+#include <zephyr/drivers/gpio.h>
+#include <lvgl.h>
+#include <stdio.h>
+#include <string.h>
+#include "sound.h"
+#include <lvgl_input_device.h>
 
-#define SAMPLE_NO 64
+LOG_MODULE_REGISTER(pet);
 
-/* The data represent a sine wave */
-static int16_t data[SAMPLE_NO] = {
-	  3211,   6392,   9511,  12539,  15446,  18204,  20787,  23169,
-	 25329,  27244,  28897,  30272,  31356,  32137,  32609,  32767,
-	 32609,  32137,  31356,  30272,  28897,  27244,  25329,  23169,
-	 20787,  18204,  15446,  12539,   9511,   6392,   3211,      0,
-	 -3212,  -6393,  -9512, -12540, -15447, -18205, -20788, -23170,
-	-25330, -27245, -28898, -30273, -31357, -32138, -32610, -32767,
-	-32610, -32138, -31357, -30273, -28898, -27245, -25330, -23170,
-	-20788, -18205, -15447, -12540,  -9512,  -6393,  -3212,     -1,
-};
+#define MAX_PATH_LEN 255
+#define MOUNT_POINT "/lfs1"
 
-/* Fill buffer with sine wave on left channel, and sine wave shifted by
- * 90 degrees on right channel. "att" represents a power of two to attenuate
- * the samples by
- */
-static void fill_buf(int16_t *tx_block, int att)
+static uint32_t count;
+static bool sound_playing = false;
+
+static struct gpio_dt_spec button_gpio = GPIO_DT_SPEC_GET_OR(
+        DT_ALIAS(sw0), gpios, {0});
+static struct gpio_callback button_callback;
+
+static lv_obj_t *hello_world_label;
+static lv_obj_t *count_label;
+static lv_obj_t *sound_button;
+static lv_obj_t *sound_status_label;
+
+static int sound_init_status = -1;
+
+static void button_isr_callback(const struct device *port,
+                struct gpio_callback *cb,
+                uint32_t pins)
 {
-	int r_idx;
+    ARG_UNUSED(port);
+    ARG_UNUSED(cb);
+    ARG_UNUSED(pins);
 
-	for (int i = 0; i < SAMPLE_NO; i++) {
-		/* Left channel is sine wave */
-		tx_block[2 * i] = data[i] / (1 << att);
-		/* Right channel is same sine wave, shifted by 90 degrees */
-		r_idx = (i + (ARRAY_SIZE(data) / 4)) % ARRAY_SIZE(data);
-		tx_block[2 * i + 1] = data[r_idx] / (1 << att);
-	}
+    if (!sound_playing && sound_init_status == 0) {
+        sound_playing = true;
+        lv_label_set_text(sound_status_label, "Playing...");
+    } else {
+        sound_playing = false;
+        lv_label_set_text(sound_status_label, "Press to play");
+    }
 }
 
-#define NUM_BLOCKS 20
-#define BLOCK_SIZE (2 * sizeof(data))
+static void sound_btn_callback(lv_event_t *e)
+{
+    ARG_UNUSED(e);
+    
+    if (!sound_playing && sound_init_status == 0) {
+        sound_playing = true;
+        lv_label_set_text(sound_status_label, "Playing...");
+    } else {
+        sound_playing = false;
+        lv_label_set_text(sound_status_label, "Press to play");
+    }
+}
 
-#ifdef CONFIG_NOCACHE_MEMORY
-	#define MEM_SLAB_CACHE_ATTR __nocache
-#else
-	#define MEM_SLAB_CACHE_ATTR
-#endif /* CONFIG_NOCACHE_MEMORY */
+void init_filesystem(void)
+{
+    struct fs_file_t file;
+    char path[MAX_PATH_LEN];
+    int rc;
 
-static char MEM_SLAB_CACHE_ATTR __aligned(WB_UP(32))
-	_k_mem_slab_buf_tx_0_mem_slab[(NUM_BLOCKS) * WB_UP(BLOCK_SIZE)];
+    snprintf(path, sizeof(path), "%s/hello.txt", MOUNT_POINT);
+    fs_file_t_init(&file);
 
-static STRUCT_SECTION_ITERABLE(k_mem_slab, tx_0_mem_slab) =
-	Z_MEM_SLAB_INITIALIZER(tx_0_mem_slab, _k_mem_slab_buf_tx_0_mem_slab,
-				WB_UP(BLOCK_SIZE), NUM_BLOCKS);
+    rc = fs_open(&file, path, FS_O_CREATE | FS_O_WRITE);
+    if (rc < 0) {
+        LOG_ERR("Failed to create file: %d", rc);
+        return;
+    }
+
+    rc = fs_write(&file, "Hello World!", strlen("Hello World!"));
+    if (rc < 0) {
+        LOG_ERR("Failed to write to file: %d", rc);
+        fs_close(&file);
+        return;
+    }
+
+    LOG_INF("File created and written successfully");
+    fs_close(&file);
+}
+
+void setup_display(const struct device *display_dev)
+{
+    hello_world_label = lv_label_create(lv_screen_active());
+    lv_label_set_text(hello_world_label, "Sound Player");
+    lv_obj_align(hello_world_label, LV_ALIGN_TOP_MID, 0, 20);
+
+    sound_button = lv_button_create(lv_screen_active());
+    lv_obj_align(sound_button, LV_ALIGN_CENTER, 0, -20);
+    lv_obj_set_size(sound_button, 150, 50);
+    lv_obj_add_event_cb(sound_button, sound_btn_callback, LV_EVENT_CLICKED, NULL);
+    
+    lv_obj_t *btn_label = lv_label_create(sound_button);
+    lv_label_set_text(btn_label, "Play Sound");
+    lv_obj_center(btn_label);
+
+    sound_status_label = lv_label_create(lv_screen_active());
+    lv_label_set_text(sound_status_label, "Press to play");
+    lv_obj_align(sound_status_label, LV_ALIGN_CENTER, 0, 30);
+
+    count_label = lv_label_create(lv_screen_active());
+    lv_obj_align(count_label, LV_ALIGN_BOTTOM_MID, 0, -20);
+    
+    display_blanking_off(display_dev);
+}
+
+void setup_button(void)
+{
+    if (!gpio_is_ready_dt(&button_gpio)) {
+        LOG_WRN("Button not ready");
+        return;
+    }
+
+    int err = gpio_pin_configure_dt(&button_gpio, GPIO_INPUT);
+    if (err) {
+        LOG_ERR("failed to configure button gpio: %d", err);
+        return;
+    }
+
+    gpio_init_callback(&button_callback, button_isr_callback,
+               BIT(button_gpio.pin));
+
+    err = gpio_add_callback(button_gpio.port, &button_callback);
+    if (err) {
+        LOG_ERR("failed to add button callback: %d", err);
+        return;
+    }
+
+    err = gpio_pin_interrupt_configure_dt(&button_gpio,
+                          GPIO_INT_EDGE_TO_ACTIVE);
+    if (err) {
+        LOG_ERR("failed to enable button callback: %d", err);
+        return;
+    }
+}
 
 int main(void)
 {
-	void *tx_block[NUM_BLOCKS];
-	struct i2s_config i2s_cfg;
-	int ret;
-	uint32_t tx_idx;
-	const struct device *dev_i2s = DEVICE_DT_GET(DT_ALIAS(i2s_tx));
+    const struct device *display_dev;
+    char count_str[11] = {0};
 
-	if (!device_is_ready(dev_i2s)) {
-		printf("I2S device not ready\n");
-		return -ENODEV;
-	}
-	/* Configure I2S stream */
-	i2s_cfg.word_size = 16U;
-	i2s_cfg.channels = 2U;
-	i2s_cfg.format = I2S_FMT_DATA_FORMAT_I2S;
-	i2s_cfg.frame_clk_freq = 44100;
-	i2s_cfg.block_size = BLOCK_SIZE;
-	i2s_cfg.timeout = 2000;
-	/* Configure the Transmit port as Master */
-	i2s_cfg.options = I2S_OPT_FRAME_CLK_MASTER
-			| I2S_OPT_BIT_CLK_MASTER;
-	i2s_cfg.mem_slab = &tx_0_mem_slab;
-	ret = i2s_configure(dev_i2s, I2S_DIR_TX, &i2s_cfg);
-	if (ret < 0) {
-		printf("Failed to configure I2S stream\n");
-		return ret;
-	}
+    display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
+    if (!device_is_ready(display_dev)) {
+        LOG_ERR("Display device not ready");
+        return 0;
+    }
 
-	/* Prepare all TX blocks */
-	for (tx_idx = 0; tx_idx < NUM_BLOCKS; tx_idx++) {
-		ret = k_mem_slab_alloc(&tx_0_mem_slab, &tx_block[tx_idx],
-				       K_FOREVER);
-		if (ret < 0) {
-			printf("Failed to allocate TX block\n");
-			return ret;
-		}
-		fill_buf((uint16_t *)tx_block[tx_idx], tx_idx % 3);
-	}
+    init_filesystem();
 
-	tx_idx = 0;
-	/* Send first block */
-	ret = i2s_write(dev_i2s, tx_block[tx_idx++], BLOCK_SIZE);
-	if (ret < 0) {
-		printf("Could not write TX buffer %d\n", tx_idx);
-		return ret;
-	}
-	/* Trigger the I2S transmission */
-	ret = i2s_trigger(dev_i2s, I2S_DIR_TX, I2S_TRIGGER_START);
-	if (ret < 0) {
-		printf("Could not trigger I2S tx\n");
-		return ret;
-	}
+    sound_init_status = sound_init();
+    if (sound_init_status < 0) {
+        LOG_ERR("Sound initialization failed: %d", sound_init_status);
+    }
 
-	for (; tx_idx < NUM_BLOCKS; ) {
-		ret = i2s_write(dev_i2s, tx_block[tx_idx++], BLOCK_SIZE);
-		if (ret < 0) {
-			printf("Could not write TX buffer %d\n", tx_idx);
-			return ret;
-		}
-	}
-	/* Drain TX queue */
-	ret = i2s_trigger(dev_i2s, I2S_DIR_TX, I2S_TRIGGER_DRAIN);
-	if (ret < 0) {
-		printf("Could not trigger I2S tx\n");
-		return ret;
-	}
-	printf("All I2S blocks written\n");
-	return 0;
+    setup_display(display_dev);
+
+    setup_button();
+
+    while (1) {
+        if ((count % 100) == 0U) {
+            sprintf(count_str, "%d", count/100U);
+            lv_label_set_text(count_label, count_str);
+        }
+
+        if (sound_playing && sound_init_status == 0) {
+            int ret = sound_play();
+            if (ret < 0) {
+                LOG_ERR("Sound playback failed: %d", ret);
+                sound_playing = false;
+                lv_label_set_text(sound_status_label, "Playback error");
+            }
+        }
+
+        lv_timer_handler();
+        ++count;
+        k_sleep(K_MSEC(10));
+    }
+
+    sound_cleanup();
+    return 0;
 }

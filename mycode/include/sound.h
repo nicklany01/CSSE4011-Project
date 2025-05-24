@@ -2,23 +2,10 @@
 #define SOUND_H
 
 #include <zephyr/kernel.h>
-#include <zephyr/drivers/i2s.h>
 
-/**
- * @brief Initialize the sound system
- * @return 0 on success, negative error code on failure
- */
-int sound_init(void);
+int sound_init();
+int sound_play();
+void sound_stop();
+void sound_cleanup();
 
-/**
- * @brief Play the sound
- * @return 0 on success, negative error code on failure
- */
-int sound_play(void);
-
-/**
- * @brief Clean up sound resources
- */
-void sound_cleanup(void);
-
-#endif
+#endif // SOUND_H

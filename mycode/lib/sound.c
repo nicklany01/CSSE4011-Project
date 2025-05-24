@@ -7,7 +7,7 @@
 #define NUM_BLOCKS 20
 #define BLOCK_SIZE (2 * SAMPLE_NO * sizeof(int16_t))
 
-/* Sine wave data */
+// sine wave data
 static int16_t data[SAMPLE_NO] = {
     3211,   6392,   9511,  12539,  15446,  18204,  20787,  23169,
     25329,  27244,  28897,  30272,  31356,  32137,  32609,  32767,
@@ -40,9 +40,9 @@ static void fill_buf(int16_t *tx_block, int att)
     int r_idx;
 
     for (int i = 0; i < SAMPLE_NO; i++) {
-        /* Left channel is sine wave */
+        // left channel is sine wave
         tx_block[2 * i] = data[i] / (1 << att);
-        /* Right channel is same sine wave, shifted by 90 degrees */
+        // right channel is sine wave shifted by 90 degrees
         r_idx = (i + (ARRAY_SIZE(data) / 4)) % ARRAY_SIZE(data);
         tx_block[2 * i + 1] = data[r_idx] / (1 << att);
     }
@@ -55,7 +55,7 @@ int sound_init(void)
         return -ENODEV;
     }
 
-    /* Configure I2S stream */
+    // configure i2s stream
     struct i2s_config i2s_cfg = {
         .word_size = 16U,
         .channels = 2U,
@@ -73,7 +73,7 @@ int sound_init(void)
         return ret;
     }
 
-    /* Prepare all TX blocks */
+    // prepare all TX blocks
     for (uint32_t tx_idx = 0; tx_idx < NUM_BLOCKS; tx_idx++) {
         ret = k_mem_slab_alloc(&tx_0_mem_slab, &tx_block[tx_idx], K_FOREVER);
         if (ret < 0) {
@@ -91,21 +91,20 @@ int sound_play(void)
     int ret;
     uint32_t tx_idx = 0;
 
-    /* Send first block */
+    // send first block
     ret = i2s_write(dev_i2s, tx_block[tx_idx++], BLOCK_SIZE);
     if (ret < 0) {
         printf("Could not write TX buffer %d\n", tx_idx);
         return ret;
     }
 
-    /* Trigger the I2S transmission */
     ret = i2s_trigger(dev_i2s, I2S_DIR_TX, I2S_TRIGGER_START);
     if (ret < 0) {
         printf("Could not trigger I2S tx\n");
         return ret;
     }
 
-    /* Send remaining blocks */
+    // send remaining blocks
     for (; tx_idx < NUM_BLOCKS; tx_idx++) {
         ret = i2s_write(dev_i2s, tx_block[tx_idx], BLOCK_SIZE);
         if (ret < 0) {
@@ -114,7 +113,6 @@ int sound_play(void)
         }
     }
 
-    /* Drain TX queue */
     ret = i2s_trigger(dev_i2s, I2S_DIR_TX, I2S_TRIGGER_DRAIN);
     if (ret < 0) {
         printf("Could not trigger I2S tx\n");
