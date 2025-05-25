@@ -9,15 +9,15 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/storage/disk_access.h>
+#include <zephyr/fs/fs.h>
 
 #include "scenes.h"
 
 #define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
-#include <zephyr/logging/log.h>
-LOG_MODULE_REGISTER(app);
 
-int main(void)
-{
+int main() {
+
 	const struct device *display_dev;
 
 	display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
