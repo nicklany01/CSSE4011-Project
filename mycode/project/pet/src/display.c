@@ -15,7 +15,7 @@ void display_update_mood(void)
     const char *names[] = {"Affection", "Happiness", "Energy", "Health", "Interaction"};
     struct mood_state local_copy;
     
-    if(k_mutex_lock(&mood_mutex, K_MSEC(100)) == 0) {
+    if(k_mutex_lock(&mood_mutex, K_NO_WAIT) == 0) {
         memcpy(&local_copy, &pet_mood, sizeof(local_copy));
         k_mutex_unlock(&mood_mutex);
     } else {

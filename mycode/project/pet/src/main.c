@@ -18,6 +18,7 @@ void main(void)
     
     mood_init();
     sound_init();
+    mpu6886_init();
     display_init(display_dev);
 
     while (1) {

@@ -42,3 +42,11 @@
         reg = <0>;
     };
 };
+
+&i2c0 {
+    mpu6886: mpu6886@68 {
+        compatible = "invensense,mpu6886";
+        reg = <0x68>;
+        status = "okay";
+    };
+};

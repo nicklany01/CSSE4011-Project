@@ -2,6 +2,7 @@
 #include <zephyr/kernel.h>
 #include <stdio.h>
 #include <zephyr/logging/log.h>
+#include "mpu6886.h"
 
 LOG_MODULE_REGISTER(mood);
 
@@ -65,18 +66,27 @@ void mood_step() {
         CLAMP(pet_mood.affection, 0, happiness_tier * 200);
     }
 
-    pet_mood.affection = CLAMP(pet_mood.affection, 0, 1000);
-    pet_mood.happiness = CLAMP(pet_mood.happiness, 0, 1000);
-    pet_mood.energy = CLAMP(pet_mood.energy, 0, 1000);
-    pet_mood.health = CLAMP(pet_mood.health, 0, 1000);
-    pet_mood.interaction = CLAMP(pet_mood.interaction, 0, 1000);
+    pet_mood.affection = CLAMP(pet_mood.affection, 0, MAX_STATE_VALUE);
+    pet_mood.happiness = CLAMP(pet_mood.happiness, 0, MAX_STATE_VALUE);
+    pet_mood.energy = CLAMP(pet_mood.energy, 0, MAX_STATE_VALUE);
+    pet_mood.health = CLAMP(pet_mood.health, 0, MAX_STATE_VALUE);
+    pet_mood.interaction = CLAMP(pet_mood.interaction, 0, MAX_STATE_VALUE);
 }
 
 void mood_thread(void *arg1, void *arg2, void *arg3) {
+    mpu6886_accel_t accel;
+    float accel_mag;
     while (1) {
         if(k_mutex_lock(&mood_mutex, K_MSEC(50)) == 0) {
             mood_step();
-            // mood_print(&pet_mood);
+            mpu6886_read_accel(&accel);
+            accel_mag = mpu6886_get_adjusted_accel_magnitude(&accel);
+            LOG_INF("Accelerometer magnitude: %.2f", accel_mag);
+            if (accel_mag > 1) {
+                pet_mood.health -= 50;
+                pet_mood.health = CLAMP(pet_mood.health, 0, MAX_STATE_VALUE);
+            }
+            mood_print(&pet_mood);
             k_mutex_unlock(&mood_mutex);
         }
         display_update_mood();
