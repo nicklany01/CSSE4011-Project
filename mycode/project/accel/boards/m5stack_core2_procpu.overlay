@@ -1,13 +1,3 @@
-&spi3 {
-	clock-frequency = <1000000>;
-};
-
-&sd0 {
-	spi-max-frequency = <1000000>;
-	spi-cpol;
-	spi-cpha;
-};
-
 / {
     aliases {
         i2s-tx = &i2s0;
@@ -50,5 +40,13 @@
     es8156: codec@0 {
         compatible = "everest,es8156";
         reg = <0>;
+    };
+};
+
+&i2c0 {
+    mpu6886: mpu6886@68 {
+        compatible = "invensense,mpu6886";
+        reg = <0x68>;
+        status = "okay";
     };
 };

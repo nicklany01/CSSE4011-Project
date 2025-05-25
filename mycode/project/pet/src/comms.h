@@ -51,6 +51,11 @@ typedef struct {
 typedef struct {
 
 
+} pet_exchange_journal_evt_pkt_s;
+
+typedef struct {
+
+
 } pet_wfc_pkt_s;
 
 void serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer);
