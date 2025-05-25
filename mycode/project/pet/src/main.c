@@ -9,12 +9,19 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/storage/disk_access.h>
 #include <zephyr/fs/fs.h>
 
 #include "scenes.h"
 
-#define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
+LOG_MODULE_REGISTER(petlog);
+
+static inline void petlog() {
+
+	LOG_MODULE_DECLARE(petlog);
+}
+
 
 int main() {
 
@@ -41,7 +48,7 @@ int main() {
 
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 2; j++) {
-				k_sleep(K_MSEC(1000));
+				k_sleep(K_MSEC(3000));
 
 				if (j == 0) {
 					scenes_set_time(MOD_TIME_MIDDAY);
