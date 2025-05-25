@@ -46,9 +46,9 @@ void mood_step(struct mood_state *update) {
     pet_mood.nutrition -= 1;
     pet_mood.interaction -= 1;
 
-    pet_mood.energy += update.energy;
-    pet_mood.nutrition += update.nutrition;
-    pet_mood.interaction += update.interaction;
+    pet_mood.energy += update->energy;
+    pet_mood.nutrition += update->nutrition;
+    pet_mood.interaction += update->interaction;
 
     pet_mood.happiness += pet_mood.energy > ENERGY_THRESHOLD ? 1 : -1;
     pet_mood.happiness += pet_mood.nutrition > NUTRITION_THRESHOLD ? 1 : -1;
@@ -57,8 +57,8 @@ void mood_step(struct mood_state *update) {
     pet_mood.affection += (pet_mood.happiness > 500) ? 1 : -1;
 
     // this basically means affection grows with happiness, but is capped in tiers so that the max affection can only be reached by the max happiness tier. if happiness tier is lower than the affection starts decreasing, otherwise it increases until it hits the cap allowed by the happiness tier.
-    happiness_tier = pet_mood.happiness / 200;
-    affection_tier = pet_mood.affection / 200;
+    uint8_t happiness_tier = pet_mood.happiness / 200;
+    uint8_t affection_tier = pet_mood.affection / 200;
     if (happiness_tier < affection_tier) {
         pet_mood.affection -= 1;
     } else if (happiness_tier >= affection_tier) {
@@ -76,8 +76,16 @@ void mood_step(struct mood_state *update) {
 
 void mood_thread() {
     // todo, implement sensor moving average, interaction detection, k_uptime_get() to do this all in one thread
+    struct mood_state update = {
+        .affection = 0,
+        .happiness = 0,
+        .energy = 0,
+        .nutrition = 0,
+        .interaction = 0
+    };
+    mood_reset();
     while (1) {
-        mood_step();
+        mood_step(&update);
         mood_print(&pet_mood);
         k_sleep(K_MSEC(100));
     }
