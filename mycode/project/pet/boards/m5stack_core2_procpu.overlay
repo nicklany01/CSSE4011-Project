@@ -1,0 +1,44 @@
+/ {
+    aliases {
+        i2s-tx = &i2s0;
+    };
+
+    fstab {
+        compatible = "zephyr,fstab";
+        lfs1: lfs1 {
+            compatible = "zephyr,fstab,littlefs";
+            mount-point = "/lfs1";
+            partition = <&storage_partition>;
+            automount;
+            read-size = <16>;
+            prog-size = <16>;
+            cache-size = <64>;
+            lookahead-size = <32>;
+            block-cycles = <512>;
+        };
+    };
+};
+
+&pinctrl {
+    i2s0_default: i2s0_default {
+        group1 {
+            pinmux = <I2S0_O_WS_GPIO0>,   /* LRCK */
+                     <I2S0_O_BCK_GPIO12>, /* BCLK */
+                     <I2S0_O_SD_GPIO2>;   /* SADTA */
+            output-enable;
+        };
+    };
+};
+
+&i2s0 {
+    status = "okay";
+    pinctrl-0 = <&i2s0_default>;
+    pinctrl-names = "default";
+    #address-cells = <1>;
+    #size-cells = <0>;
+
+    es8156: codec@0 {
+        compatible = "everest,es8156";
+        reg = <0>;
+    };
+};
