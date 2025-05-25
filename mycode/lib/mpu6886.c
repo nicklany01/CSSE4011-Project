@@ -65,3 +65,7 @@ int mpu6886_read_accel(const struct i2c_dt_spec *i2c_dev, mpu6886_accel_t *accel
 
     return 0;
 }
+
+float get_adjusted_accel_magnitude(const mpu6886_accel_t *accel) {
+    return sqrtf(accel->x * accel->x + accel->y * accel->y + (accel->z - 1) * (accel->z - 1));
+}

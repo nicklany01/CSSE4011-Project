@@ -19,8 +19,11 @@ void main(void) {
 
     while (1) {
         if (mpu6886_read_accel(&mpu6886_i2c, &accel) == 0) {
-            printk("Accel X: %.2fg, Y: %.2fg, Z: %.2fg\n",
-                   accel.x, accel.y, accel.z);
+            printk("X: %.2f, Y: %.2f, Z: %.2f\n", accel.x, accel.y, accel.z);
+            float magnitude = get_adjusted_accel_magnitude(&accel);
+            printk("Magnitude: %.2f\n", magnitude);
+        } else {
+            printk("Failed to read accelerometer data\n");
         }
         k_sleep(K_MSEC(100));
     }
