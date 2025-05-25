@@ -10,20 +10,24 @@ struct mood_state pet_mood = {
     .affection = 500,
     .happiness = 500,
     .energy = 500,
-    .nutrition = 500,
+    .health = 500,
     .interaction = 500
 };
 
-// Clamp macro
-#define CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
+struct k_mutex mood_mutex;
 
 void mood_reset() {
     LOG_INF("Mood reset to default values");
     pet_mood.affection = 500;
     pet_mood.happiness = 500;
     pet_mood.energy = 500;
-    pet_mood.nutrition = 500;
+    pet_mood.health = 500;
     pet_mood.interaction = 500;
+}
+
+void mood_init(void) {
+    k_mutex_init(&mood_mutex);
+    mood_reset();
 }
 
 void mood_print(struct mood_state *state) {
@@ -36,25 +40,19 @@ void mood_print(struct mood_state *state) {
     LOG_INF("Affection: %d", state->affection);
     LOG_INF("Happiness: %d", state->happiness);
     LOG_INF("Energy: %d", state->energy);
-    LOG_INF("Nutrition: %d", state->nutrition);
+    LOG_INF("health: %d", state->health);
     LOG_INF("Interaction: %d", state->interaction);
 }
 
-void mood_step(struct mood_state *update) {
+void mood_step() {
     // Simulate mood dynamics
     pet_mood.energy -= 1;
-    pet_mood.nutrition -= 1;
     pet_mood.interaction -= 1;
-
-    pet_mood.energy += update->energy;
-    pet_mood.nutrition += update->nutrition;
-    pet_mood.interaction += update->interaction;
+    pet_mood.health += (pet_mood.energy > ENERGY_THRESHOLD) ? 1 : -1;
 
     pet_mood.happiness += pet_mood.energy > ENERGY_THRESHOLD ? 1 : -1;
-    pet_mood.happiness += pet_mood.nutrition > NUTRITION_THRESHOLD ? 1 : -1;
+    pet_mood.happiness += pet_mood.health > HEALTH_THRESHOLD ? 1 : -1;
     pet_mood.happiness += pet_mood.interaction > INTERACTION_THRESHOLD ? 1 : -1;
-
-    pet_mood.affection += (pet_mood.happiness > 500) ? 1 : -1;
 
     // this basically means affection grows with happiness, but is capped in tiers so that the max affection can only be reached by the max happiness tier. if happiness tier is lower than the affection starts decreasing, otherwise it increases until it hits the cap allowed by the happiness tier.
     uint8_t happiness_tier = pet_mood.happiness / 200;
@@ -70,23 +68,18 @@ void mood_step(struct mood_state *update) {
     pet_mood.affection = CLAMP(pet_mood.affection, 0, 1000);
     pet_mood.happiness = CLAMP(pet_mood.happiness, 0, 1000);
     pet_mood.energy = CLAMP(pet_mood.energy, 0, 1000);
-    pet_mood.nutrition = CLAMP(pet_mood.nutrition, 0, 1000);
+    pet_mood.health = CLAMP(pet_mood.health, 0, 1000);
     pet_mood.interaction = CLAMP(pet_mood.interaction, 0, 1000);
 }
 
-void mood_thread() {
-    // todo, implement sensor moving average, interaction detection, k_uptime_get() to do this all in one thread
-    struct mood_state update = {
-        .affection = 0,
-        .happiness = 0,
-        .energy = 0,
-        .nutrition = 0,
-        .interaction = 0
-    };
-    mood_reset();
+void mood_thread(void *arg1, void *arg2, void *arg3) {
     while (1) {
-        mood_step(&update);
-        mood_print(&pet_mood);
+        if(k_mutex_lock(&mood_mutex, K_MSEC(50)) == 0) {
+            mood_step();
+            // mood_print(&pet_mood);
+            k_mutex_unlock(&mood_mutex);
+        }
+        display_update_mood();
         k_sleep(K_MSEC(100));
     }
 }

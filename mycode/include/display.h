@@ -4,5 +4,6 @@
 #include <zephyr/drivers/display.h>
 
 void display_init(const struct device *display_dev);
+void display_update_mood();
 
 #endif // DISPLAY_H
