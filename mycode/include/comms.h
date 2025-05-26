@@ -37,7 +37,8 @@ typedef enum {
 	PET_PKT_PPY_PERSONALITY,
 	PET_PKT_PEX_STATE,
 	PET_PKT_PEX_JOURNAL,
-	PET_PKT_PEX_JOURNAL_EVT
+	PET_PKT_PEX_JOURNAL_EVT,
+	PET_PKT_WFC_DEMO_COMMAND
 } pet_pkt_id_e;
 
 typedef struct {
@@ -80,10 +81,18 @@ typedef struct {
 
 } pet_exchange_journal_evt_pkt_s;
 
+typedef enum {
+
+	PET_WFC_CMD_CHANGE_SCENE,
+	PET_WFC_CMD_CHANGE_MOOD,
+	PET_WFC_CMD_CHANGE_TIME
+} pet_wfc_demo_cmds_e;
+
 typedef struct {
 
-
-} pet_wfc_pkt_s;
+	pet_wfc_demo_cmds_e cmd_id;
+	uint16_t cmd_arg;
+} pet_wfc_pkt_demo_cmd_s;
 
 int serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer);
 bool deserialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer);
@@ -93,5 +102,8 @@ bool deserialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *
 
 void serialize_pet_exchange_journal_pkt(pet_exchange_journal_pkt_s *pkt, uint8_t *buffer);
 bool deserialize_pet_exchange_journal_pkt(pet_exchange_journal_pkt_s *pkt, uint8_t *buffer);
+
+int serialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer);
+bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer);
 
 #endif

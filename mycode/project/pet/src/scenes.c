@@ -53,7 +53,7 @@ void scenes_set_main(main_scenes_e scene) {
 			scenes_state.current_screen = scene_forest.screen;
 			break;
 		case MAIN_SCENE_CITY:
-			scenes_state.current_screen = scene_city.screen;
+			//scenes_state.current_screen = scene_city.screen;
 			break;
 		case MAIN_SCENE_SHOP:
 			scenes_state.current_screen = scene_shop.screen;
@@ -303,6 +303,10 @@ void scenes_setup_weather() {
 		lv_color_hex(scenes_state.colour_sky), LV_PART_MAIN);
 }
 
+void screens_city_update() {
+
+}
+
 void scenes_draw() {
 
 	switch (scenes_state.main_scene) {
@@ -313,7 +317,7 @@ void scenes_draw() {
 			scenes_beach_update();
 			break;
 		case MAIN_SCENE_CITY:
-			lv_screen_load(scene_city.screen);
+			screens_city_update();
 			break;
 		case MAIN_SCENE_FOREST:
 			scenes_forest_update();
@@ -326,4 +330,5 @@ void scenes_draw() {
 
 	scenes_character_update();
 	lv_refr_now(NULL);
+	lv_task_handler();
 }

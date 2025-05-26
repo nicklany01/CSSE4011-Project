@@ -136,3 +136,21 @@ bool deserialize_pet_exchange_journal_pkt(pet_exchange_journal_pkt_s *pkt, uint8
 
 	return true;
 }
+
+int serialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer) {
+
+	buffer[0] = PET_PKT_WFC_DEMO_COMMAND;
+	buffer[1] = pkt->cmd_id;
+
+	e_u16(pkt->cmd_arg, buffer);
+
+	return 4;
+}
+
+bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer) {
+
+	pkt->cmd_id = buffer[1];
+	pkt->cmd_arg = d_u16(buffer + 2);
+
+	return true;
+}

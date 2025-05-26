@@ -22,6 +22,7 @@ struct k_timer comms_state_timer;
 
 pet_exchange_state_pkt_s pex_state_pkt;
 pet_personality_pkt_s pet_ppy_pkt;
+pet_wfc_pkt_demo_cmd_s pet_wfc_demo_pkt;
 
 os_uart_passthru_s uart_passthru_rx = {
 	.len = -1,
@@ -67,10 +68,40 @@ void comms_state_timeout(struct k_timer *timer) {
 	os_uart_passthru(&uart_passthru_rx);
 }
 
+void process_ble_passthru_packet() {
+
+	switch (uart_passthru_rx.buff[0]) {
+
+		case PET_PKT_WFC_DEMO_COMMAND:
+			deserialize_pet_wfc_demo_cmd_pkt(&pet_wfc_demo_pkt, uart_passthru_rx.buff);
+
+			switch (pet_wfc_demo_pkt.cmd_id) {
+
+				case PET_WFC_CMD_CHANGE_SCENE:
+					scenes_set_main(pet_wfc_demo_pkt.cmd_arg);
+					break;
+				case PET_WFC_CMD_CHANGE_MOOD:
+					scenes_set_mood(pet_wfc_demo_pkt.cmd_arg);
+					break;
+				case PET_WFC_CMD_CHANGE_TIME:
+					scenes_set_time(pet_wfc_demo_pkt.cmd_arg);
+					break;
+
+				default:
+					break;
+			}
+
+		case PET_PKT_PPY_PERSONALITY:
+			deserialize_pet_personality_pkt(&pet_ppy_pkt, uart_passthru_rx.buff);
+
+		default:
+			break;
+	}
+}
+
 int main() {
 
 	const struct device *display_dev;
-	uint8_t uart_tx_buff[RX_BUFF_SIZE] = "goodbye!";
 
 	k_timer_init(&comms_state_timer, comms_state_timeout, NULL);
 
@@ -92,7 +123,6 @@ int main() {
 	scenes_init();
 	scenes_draw();
 
-	lv_timer_handler();
 	display_blanking_off(display_dev);
 
 	k_timer_start(&comms_state_timer, K_SECONDS(3), K_SECONDS(3));
@@ -101,8 +131,13 @@ int main() {
 
 		if (k_msgq_num_used_get(&os_uart_rxq) > 0) {
 			k_msgq_get(&os_uart_rxq, &uart_passthru_rx, K_NO_WAIT);
+
+			process_ble_passthru_packet();
 		}
 
+		scenes_draw();
+
 		k_sleep(K_MSEC(100));
+
 	}
 }

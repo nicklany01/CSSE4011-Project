@@ -109,6 +109,7 @@ int main() {
 			os_uart_passthru(&uart_passthru_tx);
 
 			printf("Got a ble msg.\r\n");
+			print_buffer(uart_passthru_tx.buff, uart_passthru_tx.len);
 		}
 
 		if (k_msgq_num_used_get(&os_uart_rxq) > 0) {
