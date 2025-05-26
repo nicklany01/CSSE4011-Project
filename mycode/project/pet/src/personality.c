@@ -19,6 +19,7 @@ pet_favourites_s pet_favs = {
 	.scene = MAIN_SCENE_BEACH,
 	.time = MOD_TIME_DUSK,
 	.weather = MOD_WEATHER_SUNNY,
+	.temp = TEMP_WARM,
 
 	.food = FOOD_KFC,
 	.drink = DRINK_BEER,

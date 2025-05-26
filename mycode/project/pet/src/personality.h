@@ -1,41 +1,10 @@
 #ifndef PERSONALITY_H
 #define PERSONALITY_H
 
-#include "scenes.h"
+#include "foods.h"
+
 #include "friends.h"
-
-typedef enum {
-
-	FOOD_NONE, // keep me first
-
-	FOOD_PIZZA,
-	FOOD_BURGER,
-	FOOD_KFC,
-	FOOD_SUSHI,
-	FOOD_TACOS,
-	FOOD_HOT_DOGS,
-	FOOD_PASTA,
-	FOOD_WINGS,
-
-	FOOD_MAX // keep me last
-} foods_e;
-
-typedef enum {
-
-	DRINK_NONE, // keep me first
-
-	DRINK_COLA,
-	DRINK_LEMONADE,
-	DRINK_MOUNTAIN_DEW,
-	DRINK_WATER,
-	DRINK_JUICE,
-	DRINK_KOMBUCHA,
-	DRINK_TEA,
-	DRINK_COFFEE,
-	DRINK_BEER,
-
-	DRINK_MAX // keep me last
-} drinks_e;
+#include "scenes.h"
 
 typedef enum {
 
@@ -66,9 +35,11 @@ typedef struct {
 	foods_e food;
 	drinks_e drink;
 
+	mod_temp_e temp;
+
 } pet_favourites_s;
 
-extern pex_uuid_t pet_pex_id;
 extern uint16_t pet_personality_weights[PET_ATTR_NEG_MAX];
+extern pet_favourites_s pet_favs;
 
 #endif

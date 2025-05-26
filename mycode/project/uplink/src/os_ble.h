@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdbool.h>
 
 #include <zephyr/kernel.h>
 
@@ -24,6 +25,6 @@ typedef struct {
 
 extern struct k_msgq os_ble_rxq;
 
-
-
 bool os_ble_init();
+void os_ble_update_mf_data(uint8_t *new_mf_data);
+int os_ble_restart_advertising();

@@ -1,6 +1,6 @@
+#include <stdint.h>
+
 #include "comms.h"
-#include "journal.h"
-#include "personality.h"
 
 void e_u16(uint16_t val, uint8_t *buffer) {
 	buffer[0] = val >> 8;
@@ -22,11 +22,14 @@ uint32_t d_u32(uint8_t *buffer) {
 	return ((uint32_t)buffer[0] << 24) | ((uint32_t)buffer[1] << 16) | ((uint32_t)buffer[0] << 8) | (buffer[1] & 0xFF);
 }
 
-void serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer) {
+int serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer) {
 
-	int offset = sizeof(pkt->id);
+	int offset = 1;
 
-	e_u16(pkt->id, buffer);
+	buffer[0] = PET_PKT_PPY_PERSONALITY;
+
+	e_u16(pkt->id, buffer + offset);
+	offset += sizeof(pkt->id);
 
 	buffer[offset++] = pkt->sprite;
 
@@ -38,17 +41,19 @@ void serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer) 
 	buffer[offset++] = pkt->fav_food;
 	buffer[offset++] = pkt->fav_drink;
 
-	for (int i = 0; i < PET_ATTR_NEG_MAX; i++) {
+	for (int i = 0; i < PET_ATTR_NEG_MAX_D; i++) {
 		e_u16(pkt->weights[i], buffer + offset);
 		offset += sizeof(uint16_t);
 	}
+
+	return offset;
 }
 
 bool deserialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer) {
 
-	int offset = sizeof(pkt->id);
+	int offset = sizeof(pkt->id) + 1;
 
-	pkt->id = d_u16(buffer);
+	pkt->id = d_u16(buffer + 1);
 
 	pkt->sprite = buffer[offset++];
 
@@ -60,7 +65,7 @@ bool deserialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer
 	pkt->fav_food = buffer[offset++];
 	pkt->fav_drink = buffer[offset++];
 
-	for (int i = 0; i < PET_ATTR_NEG_MAX; i++) {
+	for (int i = 0; i < PET_ATTR_NEG_MAX_D; i++) {
 		pkt->weights[i] = d_u16(buffer + offset);
 		offset += sizeof(uint16_t);
 	}
@@ -70,9 +75,11 @@ bool deserialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer
 	return true;
 }
 
-void serialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *buffer) {
+int serialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *buffer) {
 
-	int offset = 0;
+	int offset = 1;
+
+	buffer[0] = PET_PKT_PEX_STATE;
 
 	buffer[offset++] = pkt->scene;
 	buffer[offset++] = pkt->scene_weather;
@@ -83,11 +90,12 @@ void serialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *bu
 	buffer[offset++] = pkt->held_food;
 	buffer[offset++] = pkt->held_drink;
 
+	return offset;
 }
 
 bool deserialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *buffer) {
 
-	int offset = 0;
+	int offset = 1;
 
 	pkt->scene = buffer[offset++];
 	pkt->scene_weather = buffer[offset++];

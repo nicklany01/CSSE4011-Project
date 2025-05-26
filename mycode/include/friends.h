@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 
-typedef uint32_t pex_uuid_t;
+typedef uint16_t pex_uuid_t;
+extern pex_uuid_t pet_pex_id;
 
 void friends_set_pex_id(pex_uuid_t id);
 

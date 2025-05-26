@@ -4,7 +4,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 
-#define OS_UART_PARTNER DEVICE_DT_GET(DT_ALIAS(u4))
+#define OS_UART_PARTNER DEVICE_DT_GET(DT_ALIAS(u1))
 
 #define RX_BUFF_SIZE 256
 #define RX_QUEUE_SIZE 5
@@ -17,8 +17,17 @@ typedef struct {
 	bool rx_overflow;
 } os_uart_inf;
 
+typedef struct {
+
+	uint8_t buff[RX_BUFF_SIZE];
+	int len;
+} os_uart_passthru_s;
+
 extern struct k_msgq os_uart_rxq;
+
 extern uint8_t os_uart_evt_flags;
 
 bool os_uart_init();
+void os_uart_passthru(os_uart_passthru_s *ps);
 void os_uart_tx(uint8_t *buff, int len);
+

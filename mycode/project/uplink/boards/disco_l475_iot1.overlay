@@ -82,7 +82,7 @@
 	};
 
 	aliases {
-		u4 = &uart4;
+		u1 = &uart4;
 		clk0 = &chain_clk;
 		dta0 = &chain_dta;
 		led0 = &green_led_2;

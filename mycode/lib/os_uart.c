@@ -31,6 +31,11 @@ void os_uart_tx(uint8_t *buff, int len) {
 	}
 }
 
+void os_uart_passthru(os_uart_passthru_s *ps) {
+	os_uart_tx((uint8_t *)&ps->len, 1);
+	os_uart_tx(ps->buff, ps->len);
+}
+
 static void uart_cb(const struct device *dev, void *ctx) {
 
 	uint8_t c;
@@ -60,8 +65,11 @@ static void uart_cb(const struct device *dev, void *ctx) {
 			// done should put on a queue
 			memcpy(passthru_rx.buff, os_uart_rx_buff, m_uart_state.target_size);
 			passthru_rx.len = m_uart_state.target_size;
-			k_msgq_put(&os_uart_rxq, &passthru_rx, K_NO_WAIT);
+
 			rx_buff_idx = 0;
+			m_uart_state.target_size = -1;
+
+			k_msgq_put(&os_uart_rxq, &passthru_rx, K_NO_WAIT);
 			break;
 		}
 	}

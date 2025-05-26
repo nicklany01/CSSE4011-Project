@@ -1,6 +1,7 @@
 #ifndef SCENES_H
 #define SCENES_H
 
+#include "foods.h"
 #include <stdint.h>
 
 #include <lvgl.h>
@@ -109,6 +110,11 @@ typedef struct {
 	mod_weather_e modifier_weather;
 	mod_mood_e modifier_mood;
 	mod_time_e modifier_time;
+
+	mod_temp_e modifier_temp;
+
+	drinks_e held_drink;
+	foods_e held_food;
 
 	uint32_t colour_sky;
 	lv_obj_t *current_screen;

@@ -1,4 +1,8 @@
+#include <stdint.h>
+#include <string.h>
+
 #include "os_ble.h"
+
 
 struct k_msgq os_ble_rxq;
 
@@ -19,7 +23,7 @@ static const struct bt_uuid_128 ble_uuid_chr_ppy_tx = BT_UUID_INIT_128(
 uint16_t srv_ppy_tx_data;
 uint16_t srv_ppy_rx_data;
 
-static uint8_t mf_data[MF_DLEN] = {
+uint8_t mf_data[MF_DLEN] = {
 
 	MF_ID_HIGH,
 	MF_ID_LOW,
@@ -35,15 +39,31 @@ static uint8_t mf_data[MF_DLEN] = {
 	0x00,
 };
 
-static const struct bt_data adv_pkt[] = {
-	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
-	BT_DATA(BT_DATA_MANUFACTURER_DATA, mf_data, MF_DLEN),
-	//BT_DATA_BYTES(BT_DATA_UUID128_SOME, &ble_uuid_srv_ppy.uuid)
-};
-
 struct bt_conn *pn_conn;
 struct bt_conn *bn_conn;
+
+void os_ble_update_mf_data(uint8_t *new_mf_data) {
+
+	memcpy((uint8_t *)mf_data, new_mf_data, MF_DLEN);
+}
+
+int os_ble_start_advertising() {
+
+	struct bt_data adv_pkt[] = {
+		BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+		BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
+		BT_DATA(BT_DATA_MANUFACTURER_DATA, mf_data, MF_DLEN),
+		//BT_DATA_BYTES(BT_DATA_UUID128_SOME, &ble_uuid_srv_ppy.uuid)
+	};
+
+	return bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, adv_pkt, ARRAY_SIZE(adv_pkt), NULL, 0);
+}
+
+int os_ble_restart_advertising() {
+	bt_le_adv_stop();
+
+	return os_ble_start_advertising();
+}
 
 static void os_ble_cccd_update(const struct bt_gatt_attr *attr, uint16_t val) {
 	if (val == BT_GATT_CCC_NOTIFY) {
@@ -77,6 +97,7 @@ static void os_ble_connected(struct bt_conn *connected, uint8_t err) {
 
 static void os_ble_disconnected(struct bt_conn *disconn, uint8_t reason) {
 
+	os_ble_restart_advertising();
 }
 
 BT_CONN_CB_DEFINE(conn_callbacks) = {
@@ -97,7 +118,7 @@ bool os_ble_init() {
 
 	int err;
 
-	err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, adv_pkt, ARRAY_SIZE(adv_pkt), NULL, 0);
+	err = os_ble_start_advertising();
 
 	if (err) {
 		return false;
