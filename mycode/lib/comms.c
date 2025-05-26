@@ -42,8 +42,7 @@ int serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer) {
 	buffer[offset++] = pkt->fav_drink;
 
 	for (int i = 0; i < PET_ATTR_NEG_MAX_D; i++) {
-		e_u16(pkt->weights[i], buffer + offset);
-		offset += sizeof(uint16_t);
+		buffer[offset++] = pkt->weights[i];
 	}
 
 	return offset;
@@ -51,9 +50,10 @@ int serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer) {
 
 bool deserialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer) {
 
-	int offset = sizeof(pkt->id) + 1;
+	int offset = 1;
 
-	pkt->id = d_u16(buffer + 1);
+	pkt->id = d_u16(buffer + offset);
+	offset += sizeof(pkt->id);
 
 	pkt->sprite = buffer[offset++];
 
@@ -66,8 +66,7 @@ bool deserialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer
 	pkt->fav_drink = buffer[offset++];
 
 	for (int i = 0; i < PET_ATTR_NEG_MAX_D; i++) {
-		pkt->weights[i] = d_u16(buffer + offset);
-		offset += sizeof(uint16_t);
+		pkt->weights[i] = buffer[offset++];
 	}
 
 	// NOTE: these are bools in case we add

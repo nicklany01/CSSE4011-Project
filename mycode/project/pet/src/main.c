@@ -21,7 +21,10 @@
 struct k_timer comms_state_timer;
 
 pet_exchange_state_pkt_s pex_state_pkt;
-pet_personality_pkt_s pet_ppy_pkt;
+
+pet_personality_pkt_s my_pet_ppy_pkt;
+pet_personality_pkt_s their_pet_ppy_pkt;
+
 pet_wfc_pkt_demo_cmd_s pet_wfc_demo_pkt;
 
 os_uart_passthru_s uart_passthru_rx = {
@@ -39,15 +42,29 @@ void init_personality() {
 	//hwinfo_get_device_id((uint8_t *)pet_pex_id, sizeof(pex_uuid_t));
 
 	pet_pex_id = 0xBABE;
-	pet_ppy_pkt.id = pet_pex_id;
+	my_pet_ppy_pkt.id = pet_pex_id;
 
-	pet_ppy_pkt.fav_drink = pet_favs.drink;
-	pet_ppy_pkt.fav_food = pet_favs.food;
-	pet_ppy_pkt.fav_scene = pet_favs.scene;
-	pet_ppy_pkt.fav_temp = pet_favs.temp;
-	pet_ppy_pkt.fav_time = pet_favs.time;
+	my_pet_ppy_pkt.fav_drink = pet_favs.drink;
+	my_pet_ppy_pkt.fav_food = pet_favs.food;
+	my_pet_ppy_pkt.fav_scene = pet_favs.scene;
+	my_pet_ppy_pkt.fav_temp = pet_favs.temp;
+	my_pet_ppy_pkt.fav_time = pet_favs.time;
 
-	memcpy(pet_ppy_pkt.weights, pet_personality_weights, PET_ATTR_NEG_MAX);
+	memcpy(my_pet_ppy_pkt.weights, pet_personality_weights, PET_ATTR_NEG_MAX);
+}
+
+void update_personality() {
+
+	pet_favs.drink = their_pet_ppy_pkt.fav_drink;
+	pet_favs.food = their_pet_ppy_pkt.fav_food;
+	pet_favs.scene = their_pet_ppy_pkt.fav_scene;
+	pet_favs.temp = their_pet_ppy_pkt.fav_temp;
+	pet_favs.time = their_pet_ppy_pkt.fav_time;
+
+	memcpy(pet_personality_weights, their_pet_ppy_pkt.weights, PET_ATTR_NEG_MAX);
+
+	// update my_pet_ppy_pkt
+	init_personality();
 }
 
 void comms_state_timeout(struct k_timer *timer) {
@@ -64,7 +81,7 @@ void comms_state_timeout(struct k_timer *timer) {
 	uart_passthru_rx.len = serialize_pet_exchange_state_pkt(&pex_state_pkt, uart_passthru_rx.buff);
 	os_uart_passthru(&uart_passthru_rx);
 
-	uart_passthru_rx.len = serialize_pet_personality_pkt(&pet_ppy_pkt, uart_passthru_rx.buff);
+	uart_passthru_rx.len = serialize_pet_personality_pkt(&my_pet_ppy_pkt, uart_passthru_rx.buff);
 	os_uart_passthru(&uart_passthru_rx);
 }
 
@@ -92,7 +109,13 @@ void process_ble_passthru_packet() {
 			}
 
 		case PET_PKT_PPY_PERSONALITY:
-			deserialize_pet_personality_pkt(&pet_ppy_pkt, uart_passthru_rx.buff);
+			deserialize_pet_personality_pkt(&their_pet_ppy_pkt, uart_passthru_rx.buff);
+
+			if (their_pet_ppy_pkt.id == SIENNA_MF_ID) {
+				// request came from da club, update my personality
+				update_personality();
+				break;
+			}
 
 		default:
 			break;
