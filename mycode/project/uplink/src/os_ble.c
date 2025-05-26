@@ -1,9 +1,9 @@
 #include "os_ble.h"
 
-static const struct bt_data sd[] = {
-	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
-};
+struct k_msgq os_ble_rxq;
 
+uint8_t os_ble_rx_buff[RX_BUFF_SIZE] = {0};
+char os_ble_rxq_buff[RX_QUEUE_SIZE * sizeof(os_ble_passthru_s)];
 
 static const struct bt_uuid_128 ble_uuid_srv_ppy = BT_UUID_INIT_128(
 	BT_UUID_128_ENCODE(0x4A259CE4, 0x4369, 0x4153, 0xAD28, 0xB8D61B4F447A));
@@ -54,7 +54,12 @@ static void os_ble_cccd_update(const struct bt_gatt_attr *attr, uint16_t val) {
 static ssize_t os_ble_ppy_tx_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
 	const void *buf, uint16_t len, uint16_t offset, uint8_t flags) {
 
+	os_ble_passthru_s passthru_rx;
 
+	passthru_rx.len = len;
+	memcpy(passthru_rx.buff, buf, len);
+
+	k_msgq_put(&os_ble_rxq, &passthru_rx, K_NO_WAIT);
 }
 
 BT_GATT_SERVICE_DEFINE(srv_ppy,
@@ -81,6 +86,8 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 
 
 bool os_ble_init() {
+
+	k_msgq_init(&os_ble_rxq, os_ble_rxq_buff, sizeof(os_ble_passthru_s), RX_QUEUE_SIZE);
 
 	if (bt_enable(NULL)) {
 		return false;

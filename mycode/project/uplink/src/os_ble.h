@@ -13,4 +13,17 @@
 
 #define MF_DLEN 12
 
+#define RX_BUFF_SIZE 256
+#define RX_QUEUE_SIZE 5
+
+typedef struct {
+
+	uint8_t buff[256];
+	int len;
+} os_ble_passthru_s;
+
+extern struct k_msgq os_ble_rxq;
+
+
+
 bool os_ble_init();
