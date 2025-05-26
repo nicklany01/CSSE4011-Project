@@ -1,0 +1,101 @@
+#include "os_ble.h"
+
+static const struct bt_data sd[] = {
+	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
+};
+
+
+static const struct bt_uuid_128 ble_uuid_srv_ppy = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x4A259CE4, 0x4369, 0x4153, 0xAD28, 0xB8D61B4F447A));
+
+// NOTE TX and RX here are from POV of me as the client
+static const struct bt_uuid_128 ble_uuid_chr_ppy_rx = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x4A259CE4, 0x4770, 0x4153, 0xAD28, 0xB8D61B4F447A));
+
+static const struct bt_uuid_128 ble_uuid_chr_ppy_tx = BT_UUID_INIT_128(
+	BT_UUID_128_ENCODE(0x4A259CE4, 0x4771, 0x4153, 0xAD28, 0xB8D61B4F447A));
+
+// NOTE: TX and RX here are from POV of me as the server
+uint16_t srv_ppy_tx_data;
+uint16_t srv_ppy_rx_data;
+
+static uint8_t mf_data[MF_DLEN] = {
+
+	MF_ID_HIGH,
+	MF_ID_LOW,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+	0x00,
+};
+
+static const struct bt_data adv_pkt[] = {
+	BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
+	BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
+	BT_DATA(BT_DATA_MANUFACTURER_DATA, mf_data, MF_DLEN),
+	//BT_DATA_BYTES(BT_DATA_UUID128_SOME, &ble_uuid_srv_ppy.uuid)
+};
+
+struct bt_conn *pn_conn;
+struct bt_conn *bn_conn;
+
+static void os_ble_cccd_update(const struct bt_gatt_attr *attr, uint16_t val) {
+	if (val == BT_GATT_CCC_NOTIFY) {
+		// other pet subbed for notifs we should do something here
+	}
+}
+
+static ssize_t os_ble_ppy_tx_cb(struct bt_conn *conn, const struct bt_gatt_attr *attr,
+	const void *buf, uint16_t len, uint16_t offset, uint8_t flags) {
+
+
+}
+
+BT_GATT_SERVICE_DEFINE(srv_ppy,
+	BT_GATT_PRIMARY_SERVICE(&ble_uuid_srv_ppy.uuid),
+	BT_GATT_CHARACTERISTIC(&ble_uuid_chr_ppy_rx.uuid,
+		BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_NONE, NULL, NULL, &srv_ppy_tx_data),
+	BT_GATT_CCC(os_ble_cccd_update, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	BT_GATT_CHARACTERISTIC(&ble_uuid_chr_ppy_tx.uuid,
+		BT_GATT_CHRC_WRITE, BT_GATT_PERM_WRITE, NULL, os_ble_ppy_tx_cb, (void *)1),
+);
+
+static void os_ble_connected(struct bt_conn *connected, uint8_t err) {
+
+}
+
+static void os_ble_disconnected(struct bt_conn *disconn, uint8_t reason) {
+
+}
+
+BT_CONN_CB_DEFINE(conn_callbacks) = {
+	.connected = os_ble_connected,
+	.disconnected = os_ble_disconnected,
+};
+
+
+bool os_ble_init() {
+
+	if (bt_enable(NULL)) {
+		return false;
+	}
+
+	bt_le_adv_stop();
+
+	int err;
+
+	err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, adv_pkt, ARRAY_SIZE(adv_pkt), NULL, 0);
+
+	if (err) {
+		return false;
+	}
+
+	return true;
+}
+
