@@ -29,12 +29,15 @@
 #define GAME_EVT_OTHER_PET_CONNECTED 0x02
 #define GAME_EVT_OTHER_PET_RSSI 0x04
 #define GAME_EVT_RTC_UPDATED 0x08
+#define GAME_EVT_ACCEL_SHAKE 0x10
 
-#define GAME_EVTS_ALL GAME_EVT_JOURNAL_RX_DONE | GAME_EVT_OTHER_PET_CONNECTED | GAME_EVT_OTHER_PET_RSSI | GAME_EVT_RTC_UPDATED
+#define GAME_EVTS_ALL GAME_EVT_JOURNAL_RX_DONE | GAME_EVT_OTHER_PET_CONNECTED | GAME_EVT_OTHER_PET_RSSI | GAME_EVT_RTC_UPDATED | GAME_EVT_ACCEL_SHAKE
 
 #define UART_JOURNAL_TX_COOLDOWN 100
 
 struct k_timer comms_state_timer;
+struct k_timer accel_poll_timer;
+
 struct k_event game_event_block;
 struct k_sem uart_srvc_lock;
 
@@ -92,6 +95,20 @@ os_uart_passthru_s uart_passthru_rx = {
 os_uart_passthru_s uart_passthru_tx = {
 	.len = -1,
 	.buff = {0}
+};
+
+typedef struct {
+
+	int count;
+} shake_state_s;
+
+#define ACCEL_POLL_PERIOD 500
+
+#define SHAKE_MAGNITUDE_THRESH 3
+#define SHAKE_COUNT_THRESH (3500 / ACCEL_POLL_PERIOD)
+
+shake_state_s shake_state = {
+	.count = 0
 };
 
 void update_epoch_from_pkt() {
@@ -358,6 +375,11 @@ static void thread_uart_handler(void *a, void *b, void *c) {
 	}
 }
 
+void accel_poll_timeout(struct k_timer *timer) {
+
+	k_event_post(&game_event_block, GAME_EVT_ACCEL_SHAKE);
+}
+
 /* <-- GAME_HANDLER -->
 
  * responsible for managing journal entries
@@ -367,15 +389,21 @@ static void thread_uart_handler(void *a, void *b, void *c) {
  *
  * WARNING: no other thread should add to journal */
 
-K_THREAD_STACK_DEFINE(stack_game_handler, 2048);
+mpu6886_accel_t accel;
+
+K_THREAD_STACK_DEFINE(stack_game_handler, 4096);
 struct k_thread thread_game_handler_data;
 
 static void thread_game_handler(void *a, void *b, void *c) {
 
 	uint32_t game_events = 0;
+	float magnitude = 1;
 
 	// start our day :)
 	journal_add_entry(JOURNAL_EVT_WAKE, get_since_epoch());
+
+	k_timer_init(&accel_poll_timer, accel_poll_timeout, NULL);
+	k_timer_start(&accel_poll_timer, K_SECONDS(3), K_SECONDS(3));
 
 	while (true) {
 
@@ -408,6 +436,24 @@ static void thread_game_handler(void *a, void *b, void *c) {
 			// check current time and if diff to last then
 			// add journal for sleepy or whatever
 		}
+
+		if (game_events & GAME_EVT_ACCEL_SHAKE) {
+
+			mpu6886_read_accel(&accel);
+			magnitude = mpu6886_get_adjusted_accel_magnitude(&accel);
+
+			if (magnitude > SHAKE_MAGNITUDE_THRESH) {
+				shake_state.count += 1;
+			} else {
+				shake_state.count = 0;
+			}
+
+			if (shake_state.count > SHAKE_COUNT_THRESH) {
+				journal_add_entry(JOURNAL_EVT_SHAKE, get_since_epoch());
+			}
+
+
+		}
 	}
 }
 
@@ -431,7 +477,9 @@ int main() {
 
 	mood_init();
 	//sound_init();
-	mpu6886_init();
+	if (mpu6886_init()) {
+		return;
+	}
 
 	init_personality();
 
@@ -442,6 +490,10 @@ int main() {
 	if (!os_uart_init()) {
 		return;
 	};
+
+	if (!device_is_ready(mpu6886_i2c.bus)) {
+		return;
+	}
 
 	k_event_init(&game_event_block);
 
