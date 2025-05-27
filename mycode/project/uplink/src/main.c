@@ -11,6 +11,7 @@
 
 #include "os_ble.h"
 #include "os_uart.h"
+#include "ble_uuid.h"
 
 os_uart_passthru_s uart_passthru_rx = {
 
@@ -43,6 +44,8 @@ uint8_t my_mf_data[MF_DLEN] = {
 pet_personality_pkt_s pet_ppy_pkt;
 pet_exchange_state_pkt_s pet_pex_state_pkt;
 
+pet_uart_srvc_rssi_pkt_s pet_uart_srvc_rssi_pkt;
+
 void print_buffer(uint8_t *buffer, int len) {
 	int i;
 	for (i = 0; i < len - 1; i++) {
@@ -52,6 +55,8 @@ void print_buffer(uint8_t *buffer, int len) {
 }
 
 void process_uart_packet() {
+
+	os_ble_passthru_s ble_tx;
 
 	print_buffer(uart_passthru_rx.buff, uart_passthru_rx.len);
 
@@ -72,12 +77,18 @@ void process_uart_packet() {
 
 			printf("Got a PEX.\r\n");
 
-			deserialize_pet_exchange_state_pkt(&pet_pex_state_pkt, uart_passthru_rx.buff);
+			//deserialize_pet_exchange_state_pkt(&pet_pex_state_pkt, uart_passthru_rx.buff);
+			memcpy(my_mf_data + BLE_ADV_PEX_STATE_START, uart_passthru_rx.buff + 1, 7);
+			break;
 
-			my_mf_data[BLE_ADV_CURR_SCENE] = pet_pex_state_pkt.scene;
-			my_mf_data[BLE_ADV_CURR_TIME] = pet_pex_state_pkt.scene_time;
-			my_mf_data[BLE_ADV_CURR_FOOD] = pet_pex_state_pkt.held_food;
-			my_mf_data[BLE_ADV_CURR_DRINK] = pet_pex_state_pkt.held_drink;
+		case PET_PKT_PEX_JOURNAL_EVT:
+			printf("Got a JOURNAL EVT.\r\n");
+
+			ble_tx.charac = BLE_UUID_16_CHR_PEX_RX;
+			ble_tx.len = uart_passthru_rx.len;
+			memcpy(ble_tx.buff, uart_passthru_rx.buff + 1, ble_tx.len);
+
+			os_ble_notify(&ble_tx);
 			break;
 
 		default:
@@ -85,42 +96,107 @@ void process_uart_packet() {
 	}
 
 	os_ble_update_mf_data(my_mf_data);
-	os_ble_restart_advertising();
+}
+
+
+K_THREAD_STACK_DEFINE(stack_bluetooth_state_handler, 2048);
+struct k_thread thread_bluetooth_state_handler_data;
+
+static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
+
+	os_ble_passthru_s ble_rx;
+	os_ble_pet_adv_s pet_adv;
+
+	while (true) {
+
+		switch (os_ble_state.state) {
+
+			case OS_BLE_STATE_SCAN:
+
+				printf("Starting scan...\r\n");
+				os_ble_stop_advertising();
+				os_ble_start_scan();
+
+				if (!k_msgq_get(&os_ble_advq, &pet_adv, K_MSEC(OS_BLE_DURATION_SCAN))) {
+
+					printf("Got sienna packet.\r\n");
+
+					pet_uart_srvc_rssi_pkt.rssi = pet_adv.rssi;
+					pet_uart_srvc_rssi_pkt.id = d_u16(pet_adv.mf_data + 2);
+
+					deserialize_pet_exchange_state_pkt(&pet_uart_srvc_rssi_pkt.pex_state,
+						pet_adv.mf_data + (BLE_ADV_PEX_STATE_START - 1));
+
+					uart_passthru_tx.len = serialize_pet_uart_srvc_rssi_pkt(&pet_uart_srvc_rssi_pkt, uart_passthru_tx.buff);
+					os_uart_passthru(&uart_passthru_tx);
+				}
+
+				os_ble_state.state = os_ble_state.state == OS_BLE_STATE_SCAN
+					? OS_BLE_STATE_ADVERTISE
+					: os_ble_state.state;
+
+				break;
+
+			case OS_BLE_STATE_ADVERTISE:
+
+				printf("Starting advertise...\r\n");
+				os_ble_stop_scan();
+				os_ble_restart_advertising();
+
+				k_sleep(K_MSEC(OS_BLE_DURATION_ADVERTISE));
+
+				os_ble_state.state = os_ble_state.state == OS_BLE_STATE_ADVERTISE
+					? OS_BLE_STATE_SCAN
+					: os_ble_state.state;
+
+				break;
+
+			case OS_BLE_STATE_CONNECTED:
+
+				if (k_msgq_num_used_get(&os_ble_rxq) > 0) {
+					k_msgq_get(&os_ble_rxq, &ble_rx, K_NO_WAIT);
+
+					uart_passthru_tx.len = ble_rx.len;
+					memcpy(uart_passthru_tx.buff, ble_rx.buff, uart_passthru_tx.len);
+					os_uart_passthru(&uart_passthru_tx);
+
+					printf("Got a ble msg.\r\n");
+					print_buffer(uart_passthru_tx.buff, uart_passthru_tx.len);
+				}
+			// fallthrough
+			default:
+				k_sleep(K_MSEC(100));
+				break;
+		}
+	}
 }
 
 int main() {
 
-	os_ble_passthru_s ble_rx;
+	k_tid_t tid_bluetooth_state_handler;
 
 	os_ble_init();
+
 	if (!os_uart_init()) {
 		printf("UART INIT FAILED!\n");
 	}
 
-	uint8_t tx_buff[RX_BUFF_SIZE] = "hello!";
+	os_ble_state.state = OS_BLE_STATE_SCAN;
+
+	tid_bluetooth_state_handler = k_thread_create(
+		&thread_bluetooth_state_handler_data,
+		stack_bluetooth_state_handler,
+		K_THREAD_STACK_SIZEOF(stack_bluetooth_state_handler),
+		thread_bluetooth_state_handler,
+		NULL, NULL, NULL,
+		2, 0, K_NO_WAIT
+	);
 
 	while (1) {
 
-		if (k_msgq_num_used_get(&os_ble_rxq) > 0) {
-			k_msgq_get(&os_ble_rxq, &ble_rx, K_NO_WAIT);
+		k_msgq_get(&os_uart_rxq, &uart_passthru_rx, K_FOREVER);
+		printf("Got a uart msg.\r\n");
 
-			uart_passthru_tx.len = ble_rx.len;
-			memcpy(uart_passthru_tx.buff, ble_rx.buff, uart_passthru_tx.len);
-			os_uart_passthru(&uart_passthru_tx);
-
-			printf("Got a ble msg.\r\n");
-			print_buffer(uart_passthru_tx.buff, uart_passthru_tx.len);
-		}
-
-		if (k_msgq_num_used_get(&os_uart_rxq) > 0) {
-			k_msgq_get(&os_uart_rxq, &uart_passthru_rx, K_NO_WAIT);
-
-			printf("Got a uart msg.\r\n");
-
-			process_uart_packet();
-		}
-
-		k_sleep(K_MSEC(100));
-
+		process_uart_packet();
 	}
 }

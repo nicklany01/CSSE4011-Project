@@ -97,4 +97,17 @@
 		compatible = "espressif,esp32-bt-hci";
 		status = "okay";
 	};
+
+};
+
+	bus_5v: bus_5v {
+		compatible = "regulator-fixed";
+		regulator-name = "bus_5v";
+		enable-gpios = <&axp192_gpio 5 GPIO_ACTIVE_HIGH>;
+	};
+
+	esp32_bt_hci: esp32_bt_hci {
+		compatible = "espressif,esp32-bt-hci";
+		status = "okay";
+	};
 };

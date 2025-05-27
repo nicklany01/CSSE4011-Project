@@ -172,3 +172,37 @@ bool deserialize_pet_wfc_weather_pkt(pet_wfc_weather_pkt_s *pkt, uint8_t *buffer
 
 	return true;
 }
+
+int serialize_pet_uart_srvc_rssi_pkt(pet_uart_srvc_rssi_pkt_s *pkt, uint8_t *buffer) {
+
+	int offset = 1;
+
+	buffer[0] = PET_PKT_UART_RSSI;
+
+	buffer[offset++] = pkt->rssi;
+
+	e_u16(pkt->id, buffer + offset);
+	offset += sizeof(pkt->id);
+
+	buffer[offset++] = pkt->sprite;
+
+	offset += serialize_pet_exchange_state_pkt(&pkt->pex_state, buffer + offset);
+
+	return offset;
+}
+
+bool deserialize_pet_uart_srvc_rssi_pkt(pet_uart_srvc_rssi_pkt_s *pkt, uint8_t *buffer) {
+
+	int offset = 1;
+
+	pkt->rssi = buffer[offset++];
+
+	pkt->id = d_u16(buffer + offset);
+	offset += sizeof(pkt->id);
+
+	pkt->sprite = buffer[offset++];
+
+	deserialize_pet_exchange_state_pkt(&pkt->pex_state, buffer + offset);
+
+	return true;
+}

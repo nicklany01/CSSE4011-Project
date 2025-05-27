@@ -182,4 +182,6 @@ void scenes_set_time(mod_time_e time);
 void scenes_set_mood(mod_mood_e mood);
 void scenes_set_weather(mod_weather_e weather);
 void scenes_set_main(main_scenes_e scene);
+
+void scenes_set_temp_from_int_c(int8_t c);
 #endif

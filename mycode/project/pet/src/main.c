@@ -9,23 +9,40 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/drivers/gpio.h>
-
 #include <zephyr/drivers/hwinfo.h>
 
+#include "friends.h"
+#include "journal.h"
 #include "scenes.h"
 #include "comms.h"
 #include "os_ble.h"
 #include "os_uart.h"
 #include "personality.h"
 
+#define GAME_EVT_JOURNAL_RX_DONE 0x01
+#define GAME_EVT_OTHER_PET_CONNECTED 0x02
+#define GAME_EVT_OTHER_PET_RSSI 0x04
+#define GAME_EVT_RTC_UPDATED 0x08
+
+#define GAME_EVTS_ALL GAME_EVT_JOURNAL_RX_DONE | GAME_EVT_OTHER_PET_CONNECTED | GAME_EVT_OTHER_PET_RSSI | GAME_EVT_RTC_UPDATED
+
 struct k_timer comms_state_timer;
+struct k_event game_event_block;
 
 pet_exchange_state_pkt_s pex_state_pkt;
+pet_exchange_state_pkt_s their_pex_state_pkt;
+
+pet_exchange_journal_evt_pkt_s my_pex_journal_evt_pkt;
+pet_exchange_journal_evt_pkt_s their_pex_journal_evt_pkt;
 
 pet_personality_pkt_s my_pet_ppy_pkt;
 pet_personality_pkt_s their_pet_ppy_pkt;
 
 pet_wfc_pkt_demo_cmd_s pet_wfc_demo_pkt;
+pet_wfc_rtc_pkt_s pet_wfc_rtc_pkt;
+pet_wfc_weather_pkt_s pet_wfc_weather_pkt;
+
+pet_uart_srvc_rssi_pkt_s pet_uart_srvc_rssi_pkt;
 
 os_uart_passthru_s uart_passthru_rx = {
 	.len = -1,
@@ -104,9 +121,45 @@ void process_ble_passthru_packet() {
 					scenes_set_time(pet_wfc_demo_pkt.cmd_arg);
 					break;
 
+				case PET_WFC_CMD_ADD_FRIEND:
+					if (pet_wfc_demo_pkt.cmd_arg == PEX_ID_RESERVED_NULL) {
+						// requests our friends list
+
+						break;
+					}
+
+					friends_add_friend(pet_wfc_demo_pkt.cmd_arg);
+					break;
+				case PET_WFC_CMD_REM_FRIEND:
+					friends_rem_friend(pet_wfc_demo_pkt.cmd_arg);
+					break;
+				case PET_WFC_CMD_ADD_ENEMY:
+					if (pet_wfc_demo_pkt.cmd_arg == PEX_ID_RESERVED_NULL) {
+						// requests our enemies list
+
+						break;
+					}
+
+					friends_add_enemy(pet_wfc_demo_pkt.cmd_arg);
+					break;
+				case PET_WFC_CMD_REM_ENEMY:
+					friends_rem_friend(pet_wfc_demo_pkt.cmd_arg);
+					break;
+
 				default:
 					break;
 			}
+
+		case PET_PKT_WFC_WEATHER_UPDATE:
+			deserialize_pet_wfc_weather_pkt(&pet_wfc_weather_pkt, uart_passthru_rx.buff);
+
+			scenes_set_weather(pet_wfc_weather_pkt.weather);
+			scenes_set_temp_from_int_c(pet_wfc_weather_pkt.temp_c);
+			break;
+		case PET_PKT_WFC_RTC_UPDATE:
+			deserialize_pet_wfc_rtc_pkt(&pet_wfc_rtc_pkt, uart_passthru_rx.buff);
+
+			break;
 
 		case PET_PKT_PPY_PERSONALITY:
 			deserialize_pet_personality_pkt(&their_pet_ppy_pkt, uart_passthru_rx.buff);
@@ -117,16 +170,137 @@ void process_ble_passthru_packet() {
 				break;
 			}
 
+			// other pet's personality, do something with it
+			break;
+
+		case PET_PKT_PEX_STATE:
+			deserialize_pet_exchange_state_pkt(&their_pex_state_pkt, uart_passthru_rx.buff);
+
+			// other pet's state, do something with it
+			break;
+
+		case PET_PKT_PEX_JOURNAL_EVT:
+			deserialize_pet_exchange_journal_evt_pkt(&their_pex_journal_evt_pkt, uart_passthru_rx.buff);
+
+			if (their_pex_journal_evt_pkt.index == JOURNAL_REQUEST_MAGIC_NUM) {
+				// send my journal
+				for (int i = 0; i < journal_idx; i++) {
+
+					my_pex_journal_evt_pkt.index = i == (journal_idx - 1)
+						? JOURNAL_FINISHED_MAGIC_NUM
+						: i;
+
+					journal_dupe_entry(&my_pex_journal_evt_pkt.entry, &journal[i]);
+
+					uart_passthru_tx.len = serialize_pet_exchange_journal_evt_pkt(
+						&my_pex_journal_evt_pkt,  uart_passthru_tx.buff);
+					os_uart_passthru(&uart_passthru_tx);
+				}
+
+				break;
+			}
+
+			// partner's journal, let's add it
+			journal_partner_add_entry(&their_pex_journal_evt_pkt.entry);
+			if (their_pex_journal_evt_pkt.index == JOURNAL_FINISHED_MAGIC_NUM) {
+				k_event_post(&game_event_block, GAME_EVT_JOURNAL_RX_DONE);
+			}
+			break;
+
+		case PET_PKT_UART_RSSI:
+			deserialize_pet_uart_srvc_rssi_pkt(&pet_uart_srvc_rssi_pkt, uart_passthru_rx.buff);
+			k_event_post(&game_event_block, GAME_EVT_OTHER_PET_RSSI);
+
+			break;
+
 		default:
 			break;
+	}
+}
+
+/* <-- UART_HANDLER -->
+ *
+ * responsible for managing UART comms with the uplink
+ * and scene updates after one-shot operations
+ *
+ * own's the partner's journal
+ *
+ * WARNING: no other thread should add to partner's journal
+ * WARNING: no other thread should rx/tx UART */
+
+K_THREAD_STACK_DEFINE(stack_uart_handler, 2048);
+struct k_thread thread_uart_handler_data;
+
+static void thread_uart_handler(void *a, void *b, void *c) {
+
+
+	k_timer_init(&comms_state_timer, comms_state_timeout, NULL);
+	k_timer_start(&comms_state_timer, K_SECONDS(3), K_SECONDS(3));
+
+	while (true) {
+
+		k_msgq_get(&os_uart_rxq, &uart_passthru_rx, K_FOREVER);
+		process_ble_passthru_packet();
+	}
+}
+
+/* <-- GAME_HANDLER -->
+
+ * responsible for managing journal entries
+ * and scene updates after long-running operations
+ *
+ * own's my journal
+ *
+ * WARNING: no other thread should add to journal */
+
+K_THREAD_STACK_DEFINE(stack_game_handler, 2048);
+struct k_thread thread_game_handler_data;
+
+static void thread_game_handler(void *a, void *b, void *c) {
+
+	uint32_t game_events = 0;
+
+	// start our day :)
+	journal_add_entry(JOURNAL_EVT_WAKE);
+
+	while (true) {
+
+		game_events = k_event_wait(&game_event_block, GAME_EVTS_ALL, true, K_FOREVER);
+
+		if (game_events & GAME_EVT_JOURNAL_RX_DONE) {
+			// should display the appropriate screen here
+		}
+
+		if (game_events & GAME_EVT_OTHER_PET_CONNECTED) {
+			journal_add_entry(JOURNAL_EVT_VISIT);
+		}
+
+		if (game_events & GAME_EVT_OTHER_PET_RSSI) {
+
+			switch (friends_pex_id_is_what(pet_uart_srvc_rssi_pkt.id)) {
+				case FRIENDSHIP_FRIEND:
+					journal_add_entry(JOURNAL_EVT_PROX_FRIEND);
+					break;
+				case FRIENDSHIP_ENEMY:
+					journal_add_entry(JOURNAL_EVT_PROX_ENEMY);
+					break;
+
+				default:
+					break;
+			}
+		}
+
+		if (game_events & GAME_EVT_RTC_UPDATED) {
+			// check current time and if diff to last then
+			// add journal for sleepy or whatever
+		}
 	}
 }
 
 int main() {
 
 	const struct device *display_dev;
-
-	k_timer_init(&comms_state_timer, comms_state_timeout, NULL);
+	k_tid_t tid_uart_handler, tid_game_handler;
 
 	display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 	if (!device_is_ready(display_dev)) {
@@ -143,12 +317,58 @@ int main() {
 		return;
 	};
 
+	k_event_init(&game_event_block);
+
+	friends_add_friend(0xBAB0);
+
+	tid_uart_handler = k_thread_create(
+		&thread_uart_handler_data,
+		stack_uart_handler,
+		K_THREAD_STACK_SIZEOF(stack_uart_handler),
+		thread_uart_handler,
+		NULL, NULL, NULL,
+		2, 0, K_NO_WAIT
+	);
+
+	tid_game_handler = k_thread_create(
+		&thread_game_handler_data,
+		stack_game_handler,
+		K_THREAD_STACK_SIZEOF(stack_game_handler),
+		thread_game_handler,
+		NULL, NULL, NULL,
+		2, 0, K_NO_WAIT
+	);
+
 	scenes_init();
 	scenes_draw();
 
 	display_blanking_off(display_dev);
 
-	k_timer_start(&comms_state_timer, K_SECONDS(3), K_SECONDS(3));
+	while (1) {
+
+		// main thread's only job is
+		// screen refresh 2Hz
+		scenes_draw();
+		k_sleep(K_MSEC(500));
+	}
+}
+/*
+=======
+#include <lvgl.h>
+#include <stdio.h>
+#include <string.h>
+#include "sound.h"
+#include "mood.h"
+#include <lvgl_input_device.h>
+
+void main(void)
+{
+    const struct device *display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
+    
+    mood_init();
+    sound_init();
+    mpu6886_init();
+    display_init(display_dev);
 
 	while (1) {
 
@@ -164,3 +384,7 @@ int main() {
 
 	}
 }
+
+K_THREAD_DEFINE(mood_thread_id, MOOD_THREAD_STACK_SIZE, mood_thread, NULL, NULL, NULL, MOOD_THREAD_PRIORITY, 0, 0);
+>>>>>>> Nick
+*/

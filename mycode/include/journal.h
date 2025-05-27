@@ -6,6 +6,8 @@
 #include <stddef.h>
 
 #define JOURNAL_MAX_ENTRIES 64
+#define JOURNAL_FINISHED_MAGIC_NUM 96
+#define JOURNAL_REQUEST_MAGIC_NUM 127
 
 typedef enum {
 
@@ -37,11 +39,19 @@ typedef enum {
 
 typedef struct {
 
-	uint16_t time_stamp;
+	uint16_t timestamp;
 	journal_event_e event;
 
 } journal_entry_s;
 
 extern journal_entry_s journal[JOURNAL_MAX_ENTRIES];
+extern journal_entry_s journal_partner[JOURNAL_MAX_ENTRIES];
+
+extern int journal_idx;
+extern int journal_idx_partner;
+
+void journal_dupe_entry(journal_entry_s *dst, journal_entry_s *src);
+void journal_partner_add_entry(journal_entry_s *entry);
+void journal_add_entry(journal_event_e event);
 
 #endif

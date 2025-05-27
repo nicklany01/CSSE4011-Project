@@ -11,9 +11,19 @@ from pet_app_helpers import PET_WFC_DEMO_CMDS, SPRITE, PET_PKT_ID, PET_BLE_ADV_P
 BLE_SIENNA_MF_ID = 0x6943
 SIENNA_MASTER_PEX = 0x4369
 
+JOURNAL_REQUEST_MAGIC_NUM = 127
+
 BLE_UUID_SRV_PPY = "4A259CE4-4369-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_PPY_RX = "4A259CE4-4770-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_PPY_TX = "4A259CE4-4771-4153-AD28-B8D61B4F447A"
+
+BLE_UUID_SRV_PEX = "4A259CE4-CAFE-4153-AD28-B8D61B4F447A"
+BLE_UUID_CHR_PEX_RX = "4A259CE4-4772-4153-AD28-B8D61B4F447A"
+BLE_UUID_CHR_PEX_TX = "4A259CE4-4773-4153-AD28-B8D61B4F447A"
+
+BLE_UUID_SRV_WFC = "4A259CE4-FEED-4153-AD28-B8D61B4F447A"
+BLE_UUID_CHR_WFC_RX = "4A259CE4-4774-4153-AD28-B8D61B4F447A"
+BLE_UUID_CHR_WFC_TX = "4A259CE4-4775-4153-AD28-B8D61B4F447A"
 
 def e_u16(value, buff):
 	buff.extend(value.to_bytes(2, "big"))
@@ -247,7 +257,7 @@ class PetPEXJournalEvtPkt:
 	def serialize(self):
 
 		tx_bytes = bytearray()
-		tx_bytes.append(PET_PKT_ID.PET_PKT_PEX_JOURNAL_EVT)
+		tx_bytes.append(PET_PKT_ID.PEX_JOURNAL_EVT)
 
 		tx_bytes.append(self.index)
 
@@ -307,6 +317,15 @@ async def find_ble_pet(pex_id):
 
 	return connect_dev
 
+async def pet_ble_retrieve_journal(client):
+
+	jrnl_request_pkt = PetPEXJournalEvtPkt()
+	jrnl_request_pkt.index = JOURNAL_REQUEST_MAGIC_NUM
+
+	tx_bytes = jrnl_request_pkt.serialize()
+
+	await client.write_gatt_char(BLE_UUID_CHR_PEX_TX, tx_bytes, response=False)
+
 def test_ppy_pkt():
 
 	print("=== TESTING PPY PERSONALITY PKT ===")
@@ -333,13 +352,17 @@ def test_ppy_pkt():
 	print("Packets are NOT equal!")
 	return False
 
+def notify_cb(characteristic, data):
+	print(f"Got notify to {characteristic} with {data}")
 
 async def main():
 
 	demo_pkt = PetWFCDemoCmdPkt()
 
 	test_ppy_pkt()
-	return
+
+	ppy_pkt = PetPPYPersonalityPkt()
+	ppy_pkt.randomize()
 
 	while True:
 
@@ -356,6 +379,16 @@ async def main():
 			print(service)
 			for char in service.characteristics:
 				print("\t", char)
+
+		await client.start_notify(BLE_UUID_CHR_PPY_RX, notify_cb)
+		await client.start_notify(BLE_UUID_CHR_PEX_RX, notify_cb)
+		await client.start_notify(BLE_UUID_CHR_WFC_RX, notify_cb)
+
+		tx_bytes = jrnl_request_pkt.serialize()
+		print(tx_bytes)
+
+		await asyncio.sleep(100)
+		return
 
 		# SEND PPY UPDATE
 		tx_bytes = ppy_pkt.serialize()
