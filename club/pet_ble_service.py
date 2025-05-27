@@ -317,6 +317,15 @@ async def find_ble_pet(pex_id):
 
 	return connect_dev
 
+async def pet_ble_retrieve_journal(client):
+
+	jrnl_request_pkt = PetPEXJournalEvtPkt()
+	jrnl_request_pkt.index = JOURNAL_REQUEST_MAGIC_NUM
+
+	tx_bytes = jrnl_request_pkt.serialize()
+
+	await client.write_gatt_char(BLE_UUID_CHR_PEX_TX, tx_bytes, response=False)
+
 def test_ppy_pkt():
 
 	print("=== TESTING PPY PERSONALITY PKT ===")
@@ -355,9 +364,6 @@ async def main():
 	ppy_pkt = PetPPYPersonalityPkt()
 	ppy_pkt.randomize()
 
-	jrnl_request_pkt = PetPEXJournalEvtPkt()
-	jrnl_request_pkt.index = JOURNAL_REQUEST_MAGIC_NUM
-
 	while True:
 
 		pet = await find_ble_pet(0xBABE)
@@ -380,8 +386,6 @@ async def main():
 
 		tx_bytes = jrnl_request_pkt.serialize()
 		print(tx_bytes)
-
-		await client.write_gatt_char(BLE_UUID_CHR_PPY_TX, tx_bytes, response=False)
 
 		await asyncio.sleep(100)
 		return
