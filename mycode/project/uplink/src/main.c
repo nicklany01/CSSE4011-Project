@@ -62,6 +62,16 @@ void process_uart_packet() {
 
 	switch (uart_passthru_rx.buff[0]) {
 
+		case PET_PKT_WFC_RTC_UPDATE:
+			printf("Got a WFC\r\n");
+
+			ble_tx.charac = BLE_UUID_16_CHR_WFC_RX;
+			ble_tx.len = uart_passthru_rx.len;
+			memcpy(ble_tx.buff, uart_passthru_rx.buff, ble_tx.len);
+
+			os_ble_notify(&ble_tx);
+			break;
+
 		case PET_PKT_PPY_PERSONALITY:
 
 			printf("Got a PPY\r\n");

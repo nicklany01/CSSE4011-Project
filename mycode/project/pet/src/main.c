@@ -72,6 +72,16 @@ struct tm time_state_container = {
 	.tm_year = 0
 };
 
+struct tm epoch_container = {
+	.tm_hour = 0,
+	.tm_min = 0,
+	.tm_sec = 0,
+
+	.tm_mday = 0,
+	.tm_mon = 0,
+	.tm_year = 0
+};
+
 time_t epoch;
 
 os_uart_passthru_s uart_passthru_rx = {
@@ -84,15 +94,28 @@ os_uart_passthru_s uart_passthru_tx = {
 	.buff = {0}
 };
 
-void update_time_from_pkt() {
+void update_epoch_from_pkt() {
 
-	time_state_container.tm_hour = pet_wfc_rtc_pkt.hrs;
-	time_state_container.tm_min = pet_wfc_rtc_pkt.mins;
-	time_state_container.tm_sec = pet_wfc_rtc_pkt.secs;
+	epoch_container.tm_hour = pet_wfc_rtc_pkt.hrs;
+	epoch_container.tm_min = pet_wfc_rtc_pkt.mins;
+	epoch_container.tm_sec = pet_wfc_rtc_pkt.secs;
 
-	time_state_container.tm_mday = pet_wfc_rtc_pkt.day;
-	time_state_container.tm_mon = pet_wfc_rtc_pkt.month;
-	time_state_container.tm_year = pet_wfc_rtc_pkt.year + 1900;
+	epoch_container.tm_mday = pet_wfc_rtc_pkt.day;
+	epoch_container.tm_mon = pet_wfc_rtc_pkt.month;
+	epoch_container.tm_year = pet_wfc_rtc_pkt.year + 1900;
+
+	epoch = mktime(&epoch_container);
+}
+
+void update_pkt_from_epoch() {
+
+	pet_wfc_rtc_pkt.hrs = epoch_container.tm_hour;
+	pet_wfc_rtc_pkt.mins = epoch_container.tm_min;
+	pet_wfc_rtc_pkt.secs = epoch_container.tm_sec;
+
+	pet_wfc_rtc_pkt.day = epoch_container.tm_mday;
+	pet_wfc_rtc_pkt.month = epoch_container.tm_mon;
+	pet_wfc_rtc_pkt.year = epoch_container.tm_year - 1900;
 }
 
 void init_personality() {
@@ -203,6 +226,19 @@ void process_ble_passthru_packet() {
 					friends_rem_friend(pet_wfc_demo_pkt.cmd_arg);
 					break;
 
+				case PET_WFC_CMD_GET_TIME:
+
+					k_sem_take(&uart_srvc_lock, K_FOREVER);
+
+					update_pkt_from_epoch();
+
+					uart_passthru_tx.len = serialize_pet_wfc_rtc_pkt(
+						&pet_wfc_rtc_pkt, uart_passthru_tx.buff);
+					os_uart_passthru(&uart_passthru_tx);
+
+					k_sem_give(&uart_srvc_lock);
+					break;
+
 				default:
 					break;
 			}
@@ -216,8 +252,7 @@ void process_ble_passthru_packet() {
 		case PET_PKT_WFC_RTC_UPDATE:
 			deserialize_pet_wfc_rtc_pkt(&pet_wfc_rtc_pkt, uart_passthru_rx.buff);
 
-			update_time_from_pkt();
-			epoch = mktime(&time_state_container);
+			update_epoch_from_pkt();
 
 			rtc_set_datetime(pet_wfc_rtc_pkt.year, pet_wfc_rtc_pkt.month,
 				pet_wfc_rtc_pkt.day, pet_wfc_rtc_pkt.hrs,
@@ -259,6 +294,8 @@ void process_ble_passthru_packet() {
 					my_pex_journal_evt_pkt.index = i == (to_tx - 1)
 						? JOURNAL_FINISHED_MAGIC_NUM
 						: i;
+
+					my_pex_journal_evt_pkt.id = pet_pex_id;
 
 					journal_dupe_entry(&my_pex_journal_evt_pkt.entry, &journal[i]);
 
@@ -386,8 +423,7 @@ int main() {
 
 	k_sem_init(&uart_srvc_lock, 1, 1);
 
-	update_time_from_pkt();
-	epoch = mktime(&time_state_container);
+	update_epoch_from_pkt();
 
 	rtc_set_datetime(pet_wfc_rtc_pkt.year, pet_wfc_rtc_pkt.month,
 		pet_wfc_rtc_pkt.day, pet_wfc_rtc_pkt.hrs,

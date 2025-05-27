@@ -31,7 +31,9 @@ GAME_EVT_PPY_RX_PERSONALITY = asyncio.Event()
 GAME_EVT_PEX_RX_STATE = asyncio.Event()
 GAME_EVT_PEX_RX_JOURNAL = asyncio.Event()
 
-GAME_RX_JOURNAL = PetJournal()
+GAME_EVT_WFC_RX_RTC = asyncio.Event()
+
+GAME_RX_JOURNAL = {}
 
 def e_u16(value, buff):
 	buff.extend(value.to_bytes(2, "big"))
@@ -89,6 +91,34 @@ class PetWFCRtcPkt:
 		tx_bytes.append(self.year)
 
 		return tx_bytes
+
+	def deserialize(self, rx_bytes):
+
+		barray = rx_bytes
+
+		if not isinstance(barray, bytearray):
+			barray = bytearray(rx_bytes)
+
+		offset = 1
+
+		self.secs = barray[offset]
+		offset += 1
+		self.mins = barray[offset]
+		offset += 1
+		self.hrs = barray[offset]
+		offset += 1
+
+		self.day = barray[offset]
+		offset += 1
+		self.month = barray[offset]
+		offset += 1
+		self.year = barray[offset]
+		offset += 1
+
+	def to_date(self):
+
+		return datetime(year=self.year + 1900, month=self.month,
+			day=self.day, hour=self.hrs, minute=self.mins, second=self.secs)
 
 	def __str__(self):
 
@@ -259,6 +289,7 @@ held_drink: {self.held_drink}"""
 class PetPEXJournalEvtPkt:
 	def __init__(self, entry=PetJournalEntry()):
 
+		self.pet_id = 0
 		self.index = 0
 		self.entry = entry
 
@@ -267,6 +298,7 @@ class PetPEXJournalEvtPkt:
 		tx_bytes = bytearray()
 		tx_bytes.append(PET_PKT_ID.PEX_JOURNAL_EVT)
 
+		e_u16(self.pet_id, tx_bytes)
 		tx_bytes.append(self.index)
 
 		e_u16(self.entry.timestamp, tx_bytes)
@@ -283,6 +315,9 @@ class PetPEXJournalEvtPkt:
 
 		offset = 1
 
+		self.pet_id = d_u16(barray, offset)
+		offset += 2
+
 		self.index = barray[offset]
 		offset += 1
 
@@ -295,8 +330,11 @@ class PetPEXJournalEvtPkt:
 		return f"index: {self.index} timestamp: {self.entry.timestamp} event: {self.entry.event}"
 
 BLE_PKT_PPY_PERSONALITY_RX = PetPPYPersonalityPkt()
+
 BLE_PKT_PEX_STATE_RX = PetPEXStatePkt()
 BLE_PKT_PEX_JOURNAL_EVT_RX = PetPEXJournalEvtPkt()
+
+BLE_PKT_WFC_RTC_RX = PetWFCRtcPkt()
 
 async def find_ble_pet(pex_id):
 
@@ -331,6 +369,12 @@ async def find_ble_pet(pex_id):
 
 async def pet_ble_retrieve_journal(client):
 
+	rtc_request_pkt = PetWFCDemoCmdPkt()
+	rtc_request_pkt.cmd_id = PET_WFC_DEMO_CMDS.GET_TIME
+
+	await client.write_gatt_char(BLE_UUID_CHR_WFC_TX, rtc_request_pkt.serialize(), response=False)
+	await GAME_EVT_WFC_RX_RTC.wait()
+
 	jrnl_request_pkt = PetPEXJournalEvtPkt()
 	jrnl_request_pkt.index = JOURNAL_REQUEST_MAGIC_NUM
 
@@ -357,12 +401,20 @@ def pet_ble_pex_notify_cb(characteristic, data):
 		journal_evt_pkt = PetPEXJournalEvtPkt()
 		journal_evt_pkt.deserialize(data)
 
-		GAME_RX_JOURNAL.add(journal_evt_pkt.entry)
+		try:
+			GAME_RX_JOURNAL[journal_evt_pkt.pet_id]
+		except KeyError:
+			GAME_RX_JOURNAL[journal_evt_pkt.pet_id] = PetJournal()
+			GAME_RX_JOURNAL[journal_evt_pkt.pet_id].epoch = BLE_PKT_WFC_RTC_RX.to_date()
+
+		GAME_RX_JOURNAL[journal_evt_pkt.pet_id].add(journal_evt_pkt.entry)
 
 		if journal_evt_pkt.index == JOURNAL_FINISHED_MAGIC_NUM:
 			GAME_EVT_PEX_RX_JOURNAL.set()
 
 def pet_ble_ppy_notify_cb(characteristic, data):
+
+	print(f"PPY: Got notify to {characteristic} with {data}")
 
 	pkt_type = data[0]
 
@@ -371,8 +423,14 @@ def pet_ble_ppy_notify_cb(characteristic, data):
 		GAME_EVT_PPY_RX_PERSONALITY.set()
 
 def pet_ble_wfc_notify_cb(characteristic, data):
-	# wfc is write only for now?
-	return
+
+	print(f"WFC: Got notify to {characteristic} with {data}")
+
+	pkt_type = data[0]
+
+	if pkt_type == PET_PKT_ID.WFC_RTC_UPDATE:
+		BLE_PKT_WFC_RTC_RX.deserialize(data)
+		GAME_EVT_WFC_RX_RTC.set()
 
 async def main():
 
@@ -402,7 +460,9 @@ async def main():
 		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
 
 		pet_journal = await pet_ble_retrieve_journal(client)
-		print(pet_journal)
+		for pet in pet_journal:
+			print(f"JOURNAL OF PET {hex(pet)}")
+			print(pet_journal[pet])
 
 		# SEND PPY UPDATE
 		tx_bytes = ppy_pkt.serialize()
