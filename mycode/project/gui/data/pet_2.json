@@ -7,18 +7,29 @@
     "interation_threshold": 500,
     "mood": {
         "affection": 500,
-        "happiness": 500,
-        "energy": 500,
-        "health": 500,
-        "interaction": 500
+        "happiness": 800,
+        "energy": 200,
+        "health": 700,
+        "interaction": 450
     },
     "favourites": {
-        "scene": 1,
+        "scene": 0,
         "time": 0,
         "weather": 0,
         "food": 7,
         "drink": 7
     },
-    "friends": [],
-    "journal": []
+    "friends": [
+        "0"
+    ],
+    "journal": [
+        [
+            0,
+            0
+        ],
+        [
+            10,
+            7
+        ]
+    ]
 }

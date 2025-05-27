@@ -2,17 +2,13 @@ import json
 
 import config
 import mapping
+import club.pet_app_helpers
 from enums import Scene, Time, Weather, Food, Drink, Sprite
 
 class PetMood():
-    def __init__(self):
-        self.affection = config.DEFAULT_AFFECTION
-        self.happiness = config.DEFAULT_HAPPINESS
-        self.energy = config.DEFAULT_ENERGY
-        self.health = config.DEFAULT_HEALTH
-        self.interaction = config.DEFAULT_INTERACTION
-
-    def __init__(self, affection: int, happiness: int, energy: int, health: int, interaction: int):
+    def __init__(self, affection: int=config.DEFAULT_AFFECTION, happiness: int=config.DEFAULT_HAPPINESS, 
+				 energy: int=config.DEFAULT_ENERGY, health: int=config.DEFAULT_HEALTH, 
+				 interaction: int=config.DEFAULT_INTERACTION):
         self.affection = affection
         self.happiness = happiness
         self.energy = energy
@@ -21,14 +17,9 @@ class PetMood():
 
 
 class PetFavourites():
-    def __init__(self):
-        self.scene = Scene.MAIN_SCENE_MEADOW
-        self.time = Time.MOD_TIME_MORNING
-        self.weather = Weather.MOD_WEATHER_SUNNY
-        self.food = Food.FOOD_NONE
-        self.drink = Drink.DRINK_NONE
-
-    def __init__(self, scene: int, time: int, weather: int, food: int, drink: int):
+    def __init__(self, scene: int=Scene.MAIN_SCENE_MEADOW, time: int=Time.MOD_TIME_MORNING, 
+				 weather: int=Weather.MOD_WEATHER_SUNNY, food: int=Food.FOOD_NONE, 
+				 drink: int=Drink.DRINK_NONE):
         self.scene = scene
         self.time = time
         self.weather = weather
@@ -37,11 +28,11 @@ class PetFavourites():
 
 
 class Pet():
-	def __init__(self):
-		self.reset_pet()
+	def __init__(self, file_path: str=""):
+		if file_path == "":
+			self.reset_pet()
+			return
 
-	def __init__(self, file_path: str):
-		
 		try:
 			pet_config = {}
 			with open(file_path) as f:
@@ -64,12 +55,13 @@ class Pet():
 			for friend in pet_config["friends"]:
 				self.friends.append(friend)
 
-			self.journal = []
-			for entry in pet_config["journal"]:
-				self.journal.append(entry)
+			self.journal = club.pet_app_helpers.PetJournal()
+			for time, event in pet_config["journal"]:
+				journal_entry = club.pet_app_helpers.PetJournalEntry(time, event)
+				self.journal.add(journal_entry)
 
 		except Exception as e:
-			print(f"Error: Could not properly load pet from '{file_path}'")
+			print(f"Error: Could not properly load pet from '{file_path}': {e}")
 			self.reset_pet()
 
 	def reset_pet(self):
@@ -84,7 +76,7 @@ class Pet():
 		self.mood = PetMood()
 		self.favourites = PetFavourites()
 		self.friends = []
-		self.journal = []
+		self.journal = club.pet_app_helpers.PetJournal()
 
 	def update_config(self, name: str, sprite: str, energy_threshold: int, health_threshold: int,
 				   interaction_threshold: int, fav_scene: str, fav_time: str, fav_weather: str,
@@ -128,8 +120,10 @@ class Pet():
 			pet_config["friends"].append(friend)
 
 		pet_config["journal"] = []
-		for entry in self.journal:
-			pet_config["journal"].append(entry)
+		for journal_entry in self.journal.entries:
+			if journal_entry is None:
+				continue
+			pet_config["journal"].append([journal_entry.timestamp, journal_entry.event])
 
 		with open(f"data/pet_{self.id}.json", "w") as f:
 			json.dump(pet_config, f, indent=4)

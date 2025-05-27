@@ -51,7 +51,7 @@ class PetConfig(tk.Frame):
         btn_save = tk.Button(self, text="Send and Save Changes", font=("Consolas", 14, "bold"),
                              bg="#70CB73", fg="white", activebackground="#94f599", relief="groove",
                              command=self.save_changes, pady=20)
-        btn_save.pack(fill="x", padx=20, pady=(20, 20))
+        btn_save.pack(fill="x", padx=20, pady=20)
 
         # Personal Details
         self.frm_personal = tk.Frame(self, bg=config.COLOUR_ACTIVE, padx=20, pady=20)

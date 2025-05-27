@@ -39,6 +39,12 @@ class PetPage(tk.Frame):
                 "lbl": None,
                 "frame": None
             },
+            "Interact": {
+                "command": self.show_interact,
+                "img": ImageTk.PhotoImage(Image.open("assets/icon_interact.png").resize((50, 50))),
+                "lbl": None,
+                "frame": None
+            },
             "Settings": {
                 "command": self.show_settings,
                 "img": ImageTk.PhotoImage(Image.open("assets/icon_settings.png").resize((50, 50))),
@@ -96,7 +102,6 @@ class PetPage(tk.Frame):
 
         self.cvs_content.configure(yscrollcommand=self.srcl_content.set)
 
-        # self.frm_screen.pack(side="left", fill="both", expand=True)
         self.cvs_content.pack(side="left", fill="both", expand=True)
         self.srcl_content.pack(side="right", fill="y")
 
@@ -126,20 +131,22 @@ class PetPage(tk.Frame):
     def show_settings(self):
         screens.pet_config.PetConfig(self.frm_screen, self, self.pet).pack(fill="x", expand=True)
 
+    def show_interact(self):
+        tk.Label(self.frm_screen, text=f"Interactions", font=("Consolas", 20), bg="white").pack(pady=20)
+
     def show_status(self):
-        tk.Label(self.frm_screen, text=f"{self.pet.name}'s Status", font=("Arial", 20), bg="white").pack(pady=20)
-        mood = self.pet.mood
-        stats = {
-            "Affection": mood.affection,
-            "Happiness": mood.happiness,
-            "Energy": mood.energy,
-            "Health": mood.health,
-            "Interaction": mood.interaction,
-        }
-        for k, v in stats.items():
-            tk.Label(self.frm_screen, text=f"{k}: {v}", font=("Arial", 14), bg="white").pack(pady=5)
+        screens.pet_status.PetStatus(self.frm_screen, self.pet).pack(fill="x", expand=True)
+        # tk.Label(self.frm_screen, text=f"{self.pet.name}'s Status", font=("Arial", 20), bg="white").pack(pady=20)
+        # mood = self.pet.mood
+        # stats = {
+        #     "Affection": mood.affection,
+        #     "Happiness": mood.happiness,
+        #     "Energy": mood.energy,
+        #     "Health": mood.health,
+        #     "Interaction": mood.interaction,
+        # }
+        # for k, v in stats.items():
+        #     tk.Label(self.frm_screen, text=f"{k}: {v}", font=("Arial", 14), bg="white").pack(pady=5)
 
     def show_journal(self):
-        tk.Label(self.frm_screen, text="Journal Entries", font=("Arial", 20), bg="white").pack(pady=20)
-        for entry in self.pet.journal:
-            tk.Label(self.frm_screen, text=f"• {entry}", font=("Arial", 12), anchor="w", bg="white").pack(fill=tk.X, padx=20, pady=2)
+        screens.pet_journal.PetJournal(self.frm_screen, self.pet).pack(fill="x", expand=True)
