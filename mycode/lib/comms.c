@@ -108,48 +108,67 @@ bool deserialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *
 	return true;
 }
 
-void serialize_pet_exchange_journal_pkt(pet_exchange_journal_pkt_s *pkt, uint8_t *buffer) {
+int serialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pkt, uint8_t *buffer) {
 
-	int offset = 0;
+	int offset = 1;
 
-	for (int i = 0; i < JOURNAL_MAX_ENTRIES; i++) {
+	buffer[0] = PET_PKT_PEX_JOURNAL_EVT;
 
-		e_u16(pkt->journal[i].time_stamp, buffer + offset);
-		offset += sizeof(uint16_t);
+	buffer[offset++] = pkt->index;
 
-		buffer[offset++] = pkt->journal[i].event;
-	}
+	e_u16(pkt->entry.timestamp, buffer + offset);
+	offset += sizeof(pkt->entry.timestamp);
+
+	buffer[offset++] = pkt->entry.event;
+
+	return offset;
 }
 
-bool deserialize_pet_exchange_journal_pkt(pet_exchange_journal_pkt_s *pkt, uint8_t *buffer) {
+bool deserialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pkt, uint8_t *buffer) {
 
-	int offset = 0;
+	int offset = 1;
 
-	for (int i = 0; i < JOURNAL_MAX_ENTRIES; i++) {
+	pkt->index = buffer[offset++];
 
-		pkt->journal[i].time_stamp = d_u16(buffer + offset);
-		offset += sizeof(uint16_t);
+	pkt->entry.timestamp = d_u16(buffer + offset);
+	offset += sizeof(pkt->entry.timestamp);
 
-		pkt->journal[i].event = buffer[offset++];
-	}
+	pkt->entry.event = buffer[offset];
 
 	return true;
 }
 
-int serialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer) {
-
-	buffer[0] = PET_PKT_WFC_DEMO_COMMAND;
-	buffer[1] = pkt->cmd_id;
-
-	e_u16(pkt->cmd_arg, buffer);
-
-	return 4;
-}
+// serialize not needed for WFC since it's one way
 
 bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer) {
 
 	pkt->cmd_id = buffer[1];
 	pkt->cmd_arg = d_u16(buffer + 2);
+
+	return true;
+}
+
+bool deserialize_pet_wfc_rtc_pkt(pet_wfc_rtc_pkt_s *pkt, uint8_t *buffer) {
+
+	int offset = 1;
+
+	pkt->secs = buffer[offset++];
+	pkt->mins = buffer[offset++];
+	pkt->hrs = buffer[offset++];
+
+	pkt->day = buffer[offset++];
+	pkt->month = buffer[offset++];
+	pkt->year = buffer[offset++];
+
+	return true;
+}
+
+bool deserialize_pet_wfc_weather_pkt(pet_wfc_weather_pkt_s *pkt, uint8_t *buffer) {
+
+	int offset = 1;
+
+	pkt->temp_c = buffer[offset];
+	pkt->weather = buffer[offset];
 
 	return true;
 }

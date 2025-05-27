@@ -38,7 +38,9 @@ typedef enum {
 	PET_PKT_PEX_STATE,
 	PET_PKT_PEX_JOURNAL,
 	PET_PKT_PEX_JOURNAL_EVT,
-	PET_PKT_WFC_DEMO_COMMAND
+	PET_PKT_WFC_DEMO_COMMAND,
+	PET_PKT_WFC_RTC_UPDATE,
+	PET_PKT_WFC_WEATHER_UPDATE
 } pet_pkt_id_e;
 
 typedef struct {
@@ -73,11 +75,8 @@ typedef struct {
 
 typedef struct {
 
-	journal_entry_s journal[JOURNAL_MAX_ENTRIES];
-} pet_exchange_journal_pkt_s;
-
-typedef struct {
-
+	uint8_t index;
+	journal_entry_s entry;
 
 } pet_exchange_journal_evt_pkt_s;
 
@@ -94,16 +93,34 @@ typedef struct {
 	uint16_t cmd_arg;
 } pet_wfc_pkt_demo_cmd_s;
 
+typedef struct {
+
+	uint8_t secs;
+	uint8_t mins;
+	uint8_t hrs;
+
+	uint8_t day;
+	uint8_t month;
+	uint8_t year;
+} pet_wfc_rtc_pkt_s;
+
+typedef struct {
+
+	int8_t temp_c;
+	uint8_t weather;
+} pet_wfc_weather_pkt_s;
+
 int serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer);
 bool deserialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer);
 
 int serialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *buffer);
 bool deserialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *buffer);
 
-void serialize_pet_exchange_journal_pkt(pet_exchange_journal_pkt_s *pkt, uint8_t *buffer);
-bool deserialize_pet_exchange_journal_pkt(pet_exchange_journal_pkt_s *pkt, uint8_t *buffer);
+int serialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pkt, uint8_t *buffer);
+bool deserialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pkt, uint8_t *buffer);
 
-int serialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer);
 bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer);
+bool deserialize_pet_wfc_rtc_pkt(pet_wfc_rtc_pkt_s *pkt, uint8_t *buffer);
+bool deserialize_pet_wfc_weather_pkt(pet_wfc_weather_pkt_s *pkt, uint8_t *buffer);
 
 #endif

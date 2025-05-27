@@ -1,7 +1,12 @@
 import asyncio
-from bleak import BleakScanner, BleakClient
 
 from random import randint
+from datetime import datetime
+
+from bleak import BleakScanner, BleakClient
+
+from pet_app_helpers import PET_WFC_DEMO_CMDS, SPRITE, PET_PKT_ID, PET_BLE_ADV_POS, \
+	PetJournalEntry, PetJournal
 
 BLE_SIENNA_MF_ID = 0x6943
 SIENNA_MASTER_PEX = 0x4369
@@ -10,40 +15,11 @@ BLE_UUID_SRV_PPY = "4A259CE4-4369-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_PPY_RX = "4A259CE4-4770-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_PPY_TX = "4A259CE4-4771-4153-AD28-B8D61B4F447A"
 
-# WARNING: keep sync'd with comms.h
-class PET_WFC_DEMO_CMDS:
-	CHANGE_SCENE = 0
-	CHANGE_MOOD = 1
-	CHANGE_TIME = 2
-
-class SPRITE:
-	ZERO = 0
-	CHERRY = 1
-	ICE = 2
-	GRAPE = 3
-	BAJA_BLAST = 4
-
-
-class PET_PKT_ID:
-	PPY_PERSONALITY = 0
-	PEX_STATE = 1
-	PEX_JOURNAL = 2
-	PEX_JOURNAL_EVT = 3
-	WFC_DEMO_COMMAND = 4
-
-class PET_BLE_ADV_POS:
-	PEX_ID_HIGH = 0
-	PEX_ID_LOW = 1
-	MY_SPRITE = 2
-
-	CURR_SCENE = 3
-	CURR_TIME = 4
-
-	CURR_FOOD = 5
-	CURR_DRINK = 6
-
 def e_u16(value, buff):
 	buff.extend(value.to_bytes(2, "big"))
+
+def d_u16(buff, pos):
+	return (buff[pos] << 8) | (buff[pos + 1] & 0xFF)
 
 class PetWFCDemoCmdPkt:
 
@@ -53,13 +29,76 @@ class PetWFCDemoCmdPkt:
 
 	def serialize(self):
 
-		ret_bytes = bytearray()
+		tx_bytes = bytearray()
+		tx_bytes.append(PET_PKT_ID.WFC_DEMO_COMMAND)
 
-		ret_bytes.append(PET_PKT_ID.WFC_DEMO_COMMAND)
-		ret_bytes.append(self.cmd_id)
-		e_u16(self.cmd_arg, ret_bytes)
+		tx_bytes.append(self.cmd_id)
+		e_u16(self.cmd_arg, tx_bytes)
 
-		return ret_bytes
+		return tx_bytes
+
+	def __str__(self):
+		return f"cmd_id: {self.cmd_id} cmd_arg: {self.cmd_arg}"
+
+	# no deserialize needed, WFC is one way
+
+class PetWFCRtcPkt:
+	def __init__(self):
+
+		time = datetime.now()
+
+		self.secs = time.second
+		self.mins = time.minute
+		self.hrs = time.hour
+
+		self.day = time.day
+		self.month = time.month
+		# keep in line w zephyr API
+		# pet will last 130 more years as uint8...
+		self.year = time.year - 1900
+
+	def serialize(self):
+
+		tx_bytes = bytearray()
+		tx_bytes.append(PET_PKT_ID.WFC_RTC_UPDATE)
+
+		tx_bytes.append(self.secs)
+		tx_bytes.append(self.mins)
+		tx_bytes.append(self.hrs)
+
+		tx_bytes.append(self.day)
+		tx_bytes.append(self.month)
+		tx_bytes.append(self.year)
+
+		return tx_bytes
+
+	def __str__(self):
+
+		return f"{self.hrs}:{self.mins}:{self.secs} {self.day}/{self.month}/{self.year}"
+
+	# no deserialize needed, WFC is one way
+
+class PetWFCWeatherPkt:
+	def __init__(self):
+
+		self.temp_c = 0
+		self.weather = 0
+
+	def serialize(self):
+
+		tx_bytes = bytearray()
+		tx_bytes.append(PET_PKT_ID.WFC_WEATHER_UPDATE)
+
+		tx_bytes.append(self.temp_c)
+		tx_bytes.append(self.weather)
+
+		return tx_bytes
+
+	def __str__(self):
+
+		return f"temp_c: {self.temp_c} weather: {self.weather}"
+
+	# no deserialize needed, WFC is one way
 
 class PetPPYPersonalityPkt:
 	def __init__(self):
@@ -82,23 +121,160 @@ class PetPPYPersonalityPkt:
 
 	def serialize(self):
 
-		ret_bytes = bytearray()
+		tx_bytes = bytearray()
+		tx_bytes.append(PET_PKT_ID.PPY_PERSONALITY)
 
-		ret_bytes.append(PET_PKT_ID.PPY_PERSONALITY)
+		e_u16(self.pex_id, tx_bytes)
 
-		e_u16(self.pex_id, ret_bytes)
+		tx_bytes.append(self.sprite)
+		tx_bytes.append(self.fav_scene)
+		tx_bytes.append(self.fav_weather)
+		tx_bytes.append(self.fav_time)
+		tx_bytes.append(self.fav_temp)
 
-		ret_bytes.append(self.sprite)
-		ret_bytes.append(self.fav_scene)
-		ret_bytes.append(self.fav_weather)
-		ret_bytes.append(self.fav_time)
-		ret_bytes.append(self.fav_temp)
-		ret_bytes.append(self.fav_drink)
+		tx_bytes.append(self.fav_food)
+		tx_bytes.append(self.fav_drink)
 
 		for i in self.weights:
-			ret_bytes.append(i)
+			tx_bytes.append(i)
 
-		return ret_bytes
+		return tx_bytes
+
+	def deserialize(self, rx_bytes):
+
+		barray = rx_bytes
+
+		if not isinstance(barray, bytearray):
+			barray = bytearray(rx_bytes)
+
+		offset = 1
+		self.pex_id = d_u16(barray, offset)
+		offset += 2
+
+		self.sprite = barray[offset]
+		offset += 1
+		self.fav_scene = barray[offset]
+		offset += 1
+		self.fav_weather = barray[offset]
+		offset += 1
+		self.fav_time = barray[offset]
+		offset += 1
+		self.fav_temp = barray[offset]
+		offset += 1
+
+		self.fav_food = barray[offset]
+		offset += 1
+		self.fav_drink = barray[offset]
+		offset += 1
+
+		for i in range(0, len(self.weights)):
+			self.weights[i] = barray[offset]
+			offset += 1
+
+	def __str__(self):
+
+		return f"""pex_id: {self.pex_id} sprite: {self.sprite}
+fav_scene: {self.fav_scene} fav_weather: {self.fav_weather}
+fav_time: {self.fav_time} fav_temp: {self.fav_temp}
+fav_food: {self.fav_food} fav_drink: {self.fav_drink}
+weights: {self.weights}"""
+
+class PetPEXStatePkt:
+	def __init__(self):
+
+		self.scene = 0
+		self.scene_weather = 0
+		self.scene_mood = 0
+		self.scene_time = 0
+		self.scene_temp = 0
+
+		self.held_food = 0
+		self.held_drink = 0
+
+	def serialize(self):
+
+		tx_bytes = bytearray()
+		tx_bytes.append(PET_PKT_ID.PEX_STATE)
+
+		tx_bytes.append(self.scene)
+		tx_bytes.append(self.scene_weather)
+		tx_bytes.append(self.scene_mood)
+		tx_bytes.append(self.scene_time)
+
+		tx_bytes.append(self.held_food)
+		tx_bytes.append(self.held_drink)
+
+		return tx_bytes
+
+	def deserialize(self, rx_bytes):
+
+		barray = rx_bytes
+
+		if not isinstance(barray, bytearray):
+			barray = bytearray(rx_bytes)
+
+		offset = 1
+
+		self.scene = barray[offset]
+		offset += 1
+		self.scene_weather = barray[offset]
+		offset += 1
+		self.scene_mood = barray[offset]
+		offset += 1
+		self.scene_time = barray[offset]
+		offset += 1
+		self.scene_temp = barray[offset]
+		offset += 1
+
+		self.held_food = barray[offset]
+		offset += 1
+		self.held_drink = barray[offset]
+		offset += 1
+
+	def __str__(self):
+
+		return f"""scene: {self.scene} weather: {self.scene_weather}
+mood: {self.scene_mood} time: {self.scene_time}
+temp: {self.scene_temp} held_food: {self.held_food}
+held_drink: {self.held_drink}"""
+
+class PetPEXJournalEvtPkt:
+	def __init__(self, entry=PetJournalEntry()):
+
+		self.index = 0
+		self.entry = entry
+
+	def serialize(self):
+
+		tx_bytes = bytearray()
+		tx_bytes.append(PET_PKT_ID.PET_PKT_PEX_JOURNAL_EVT)
+
+		tx_bytes.append(self.index)
+
+		e_u16(self.entry.timestamp, tx_bytes)
+		tx_bytes.append(self.entry.event)
+
+		return tx_bytes
+
+	def deserialize(self, rx_bytes):
+
+		barray = rx_bytes
+
+		if not isinstance(barray, bytearray):
+			barray = bytearray(rx_bytes)
+
+		offset = 1
+
+		self.index = barray[offset]
+		offset += 1
+
+		self.entry.timestamp = d_u16(barray, offset)
+		offset += 2
+		self.entry.event = barray[offset]
+		offset += 1
+
+	def __str__(self):
+		return f"index: {self.index} timestamp: {self.entry.timestamp} event: {self.entry.event}"
 
 async def find_ble_pet(pex_id):
 
@@ -131,9 +307,10 @@ async def find_ble_pet(pex_id):
 
 	return connect_dev
 
-async def main():
+def test_ppy_pkt():
 
-	demo_pkt = PetWFCDemoCmdPkt()
+	print("=== TESTING PPY PERSONALITY PKT ===")
+
 	ppy_pkt = PetPPYPersonalityPkt()
 
 	ppy_pkt.randomize()
@@ -141,6 +318,28 @@ async def main():
 	ppy_pkt.fav_drink = 3
 	ppy_pkt.fav_food = 2
 	ppy_pkt.sprite = SPRITE.BAJA_BLAST
+
+	new_pkt = PetPPYPersonalityPkt()
+	new_pkt.deserialize(ppy_pkt.serialize())
+
+	print(str(ppy_pkt))
+	print("")
+	print(str(new_pkt))
+
+	if str(ppy_pkt) == str(new_pkt):
+		print("Packets are equal.")
+		return True
+
+	print("Packets are NOT equal!")
+	return False
+
+
+async def main():
+
+	demo_pkt = PetWFCDemoCmdPkt()
+
+	test_ppy_pkt()
+	return
 
 	while True:
 
