@@ -11,6 +11,7 @@
 
 #include "os_ble.h"
 #include "os_uart.h"
+#include "ble_uuid.h"
 
 os_uart_passthru_s uart_passthru_rx = {
 
@@ -55,6 +56,8 @@ void print_buffer(uint8_t *buffer, int len) {
 
 void process_uart_packet() {
 
+	os_ble_passthru_s ble_tx;
+
 	print_buffer(uart_passthru_rx.buff, uart_passthru_rx.len);
 
 	switch (uart_passthru_rx.buff[0]) {
@@ -76,6 +79,16 @@ void process_uart_packet() {
 
 			//deserialize_pet_exchange_state_pkt(&pet_pex_state_pkt, uart_passthru_rx.buff);
 			memcpy(my_mf_data + BLE_ADV_PEX_STATE_START, uart_passthru_rx.buff + 1, 7);
+			break;
+
+		case PET_PKT_PEX_JOURNAL_EVT:
+			printf("Got a JOURNAL EVT.\r\n");
+
+			ble_tx.charac = BLE_UUID_16_CHR_PEX_RX;
+			ble_tx.len = uart_passthru_rx.len;
+			memcpy(ble_tx.buff, uart_passthru_rx.buff + 1, ble_tx.len);
+
+			os_ble_notify(&ble_tx);
 			break;
 
 		default:

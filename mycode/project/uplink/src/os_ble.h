@@ -34,8 +34,11 @@ typedef enum {
 
 typedef struct {
 
+	uint16_t charac;
+
 	uint8_t buff[256];
 	int len;
+
 } os_ble_passthru_s;
 
 typedef struct {
@@ -58,6 +61,7 @@ void os_ble_update_mf_data(uint8_t *new_mf_data);
 
 void os_ble_start_scan();
 void os_ble_stop_scan();
+void os_ble_notify(os_ble_passthru_s *passthru);
 
 int os_ble_restart_advertising();
 void os_ble_stop_advertising();

@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "os_ble.h"
+#include "ble_uuid.h"
 
 struct k_msgq os_ble_rxq;
 struct k_msgq os_ble_advq;
@@ -9,19 +10,10 @@ struct k_msgq os_ble_advq;
 char os_ble_rxq_buff[RX_QUEUE_SIZE * sizeof(os_ble_passthru_s)];
 char os_ble_advq_buff[RX_QUEUE_SIZE * sizeof(os_ble_pet_adv_s)];
 
-static const struct bt_uuid_128 ble_uuid_srv_ppy = BT_UUID_INIT_128(
-	BT_UUID_128_ENCODE(0x4A259CE4, 0x4369, 0x4153, 0xAD28, 0xB8D61B4F447A));
-
-// NOTE TX and RX here are from POV of me as the client
-static const struct bt_uuid_128 ble_uuid_chr_ppy_rx = BT_UUID_INIT_128(
-	BT_UUID_128_ENCODE(0x4A259CE4, 0x4770, 0x4153, 0xAD28, 0xB8D61B4F447A));
-
-static const struct bt_uuid_128 ble_uuid_chr_ppy_tx = BT_UUID_INIT_128(
-	BT_UUID_128_ENCODE(0x4A259CE4, 0x4771, 0x4153, 0xAD28, 0xB8D61B4F447A));
-
 // NOTE: TX and RX here are from POV of me as the server
-uint16_t srv_ppy_tx_data;
-uint16_t srv_ppy_rx_data;
+uint8_t srv_ppy_tx_data[RX_BUFF_SIZE] = {0};
+uint8_t srv_pex_tx_data[RX_BUFF_SIZE] = {0};
+uint8_t srv_wfc_tx_data[RX_BUFF_SIZE] = {0};
 
 uint8_t mf_data[MF_DLEN] = {
 
@@ -167,6 +159,43 @@ BT_GATT_SERVICE_DEFINE(srv_ppy,
 	BT_GATT_CHARACTERISTIC(&ble_uuid_chr_ppy_tx.uuid,
 		BT_GATT_CHRC_WRITE, BT_GATT_PERM_WRITE, NULL, os_ble_ppy_tx_cb, (void *)1),
 );
+
+BT_GATT_SERVICE_DEFINE(srv_pex,
+	BT_GATT_PRIMARY_SERVICE(&ble_uuid_srv_pex.uuid),
+	BT_GATT_CHARACTERISTIC(&ble_uuid_chr_pex_rx.uuid,
+		BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_NONE, NULL, NULL, &srv_pex_tx_data),
+	BT_GATT_CCC(os_ble_cccd_update, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	BT_GATT_CHARACTERISTIC(&ble_uuid_chr_pex_tx.uuid,
+		BT_GATT_CHRC_WRITE, BT_GATT_PERM_WRITE, NULL, os_ble_ppy_tx_cb, (void *)1),
+);
+
+BT_GATT_SERVICE_DEFINE(srv_wfc,
+	BT_GATT_PRIMARY_SERVICE(&ble_uuid_srv_wfc.uuid),
+	BT_GATT_CHARACTERISTIC(&ble_uuid_chr_wfc_rx.uuid,
+		BT_GATT_CHRC_NOTIFY, BT_GATT_PERM_NONE, NULL, NULL, &srv_wfc_tx_data),
+	BT_GATT_CCC(os_ble_cccd_update, BT_GATT_PERM_READ | BT_GATT_PERM_WRITE),
+	BT_GATT_CHARACTERISTIC(&ble_uuid_chr_wfc_tx.uuid,
+		BT_GATT_CHRC_WRITE, BT_GATT_PERM_WRITE, NULL, os_ble_ppy_tx_cb, (void *)1),
+);
+
+void os_ble_notify(os_ble_passthru_s *passthru) {
+
+	switch (passthru->charac) {
+
+		case BLE_UUID_16_CHR_PPY_RX:
+			bt_gatt_notify(NULL, &srv_ppy.attrs[1], passthru->buff, passthru->len);
+			break;
+		case BLE_UUID_16_CHR_PEX_RX:
+			bt_gatt_notify(NULL, &srv_pex.attrs[1], passthru->buff, passthru->len);
+			break;
+		case BLE_UUID_16_CHR_WFC_RX:
+			bt_gatt_notify(NULL, &srv_wfc.attrs[1], passthru->buff, passthru->len);
+			break;
+
+		default:
+			break;
+	}
+}
 
 static void os_ble_connected(struct bt_conn *connected, uint8_t err) {
 	os_ble_state.state = OS_BLE_STATE_CONNECTED;

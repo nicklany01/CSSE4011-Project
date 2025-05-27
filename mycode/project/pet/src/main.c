@@ -187,7 +187,7 @@ void process_ble_passthru_packet() {
 				// send my journal
 				for (int i = 0; i < journal_idx; i++) {
 
-					my_pex_journal_evt_pkt.index = i == journal_idx
+					my_pex_journal_evt_pkt.index = i == (journal_idx - 1)
 						? JOURNAL_FINISHED_MAGIC_NUM
 						: i;
 
@@ -219,7 +219,7 @@ void process_ble_passthru_packet() {
 	}
 }
 
-/* <-- GAME_HANDLER -->
+/* <-- UART_HANDLER -->
  *
  * responsible for managing UART comms with the uplink
  * and scene updates after one-shot operations

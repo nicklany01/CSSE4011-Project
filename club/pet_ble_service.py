@@ -17,6 +17,14 @@ BLE_UUID_SRV_PPY = "4A259CE4-4369-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_PPY_RX = "4A259CE4-4770-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_PPY_TX = "4A259CE4-4771-4153-AD28-B8D61B4F447A"
 
+BLE_UUID_SRV_PEX = "4A259CE4-CAFE-4153-AD28-B8D61B4F447A"
+BLE_UUID_CHR_PEX_RX = "4A259CE4-4772-4153-AD28-B8D61B4F447A"
+BLE_UUID_CHR_PEX_TX = "4A259CE4-4773-4153-AD28-B8D61B4F447A"
+
+BLE_UUID_SRV_WFC = "4A259CE4-FEED-4153-AD28-B8D61B4F447A"
+BLE_UUID_CHR_WFC_RX = "4A259CE4-4774-4153-AD28-B8D61B4F447A"
+BLE_UUID_CHR_WFC_TX = "4A259CE4-4775-4153-AD28-B8D61B4F447A"
+
 def e_u16(value, buff):
 	buff.extend(value.to_bytes(2, "big"))
 
@@ -249,7 +257,7 @@ class PetPEXJournalEvtPkt:
 	def serialize(self):
 
 		tx_bytes = bytearray()
-		tx_bytes.append(PET_PKT_ID.PET_PKT_PEX_JOURNAL_EVT)
+		tx_bytes.append(PET_PKT_ID.PEX_JOURNAL_EVT)
 
 		tx_bytes.append(self.index)
 
@@ -367,6 +375,16 @@ async def main():
 				print("\t", char)
 
 		await client.start_notify(BLE_UUID_CHR_PPY_RX, notify_cb)
+		await client.start_notify(BLE_UUID_CHR_PEX_RX, notify_cb)
+		await client.start_notify(BLE_UUID_CHR_WFC_RX, notify_cb)
+
+		tx_bytes = jrnl_request_pkt.serialize()
+		print(tx_bytes)
+
+		await client.write_gatt_char(BLE_UUID_CHR_PPY_TX, tx_bytes, response=False)
+
+		await asyncio.sleep(100)
+		return
 
 		# SEND PPY UPDATE
 		tx_bytes = ppy_pkt.serialize()

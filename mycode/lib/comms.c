@@ -195,7 +195,7 @@ bool deserialize_pet_uart_srvc_rssi_pkt(pet_uart_srvc_rssi_pkt_s *pkt, uint8_t *
 
 	int offset = 1;
 
-	pkt->rssi = buffer[offset];
+	pkt->rssi = buffer[offset++];
 
 	pkt->id = d_u16(buffer + offset);
 	offset += sizeof(pkt->id);
