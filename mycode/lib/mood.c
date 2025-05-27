@@ -116,12 +116,12 @@ void mood_thread(void *arg1, void *arg2, void *arg3) {
             mood_step();
             mpu6886_read_accel(&accel);
             accel_mag = mpu6886_get_adjusted_accel_magnitude(&accel);
-            LOG_INF("Accelerometer magnitude: %.2f", accel_mag);
+            // LOG_INF("Accelerometer magnitude: %.2f", accel_mag);
             if (accel_mag > 1) {
                 pet_mood.health -= 50;
                 pet_mood.health = CLAMP(pet_mood.health, 0, MAX_STATE_VALUE);
             }
-            mood_print(&pet_mood);
+            // mood_print(&pet_mood);
             k_mutex_unlock(&mood_mutex);
         }
         display_update_mood();
