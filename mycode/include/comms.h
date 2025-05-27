@@ -14,6 +14,8 @@
 
 #define PET_ATTR_NEG_MAX_D 9
 
+#define BLE_ADV_PEX_STATE_START 5
+
 typedef enum {
 
 	BLE_ADV_MF_ID_HIGH,
@@ -22,25 +24,23 @@ typedef enum {
 	BLE_ADV_PEX_ID_HIGH,
 	BLE_ADV_PEX_ID_LOW,
 	BLE_ADV_MY_SPRITE,
-
-	BLE_ADV_CURR_SCENE,
-	BLE_ADV_CURR_TIME,
-
-	BLE_ADV_CURR_FOOD,
-	BLE_ADV_CURR_DRINK
-
 } ble_adv_pkt_pos_e;
 
 
 typedef enum {
 
 	PET_PKT_PPY_PERSONALITY,
+
 	PET_PKT_PEX_STATE,
 	PET_PKT_PEX_JOURNAL,
 	PET_PKT_PEX_JOURNAL_EVT,
+
 	PET_PKT_WFC_DEMO_COMMAND,
 	PET_PKT_WFC_RTC_UPDATE,
-	PET_PKT_WFC_WEATHER_UPDATE
+	PET_PKT_WFC_WEATHER_UPDATE,
+
+	// NOTE: keep UART packets LAST
+	PET_PKT_UART_RSSI
 } pet_pkt_id_e;
 
 typedef struct {
@@ -84,7 +84,13 @@ typedef enum {
 
 	PET_WFC_CMD_CHANGE_SCENE,
 	PET_WFC_CMD_CHANGE_MOOD,
-	PET_WFC_CMD_CHANGE_TIME
+	PET_WFC_CMD_CHANGE_TIME,
+
+	PET_WFC_CMD_ADD_FRIEND,
+	PET_WFC_CMD_ADD_ENEMY,
+
+	PET_WFC_CMD_REM_FRIEND,
+	PET_WFC_CMD_REM_ENEMY,
 } pet_wfc_demo_cmds_e;
 
 typedef struct {
@@ -110,6 +116,18 @@ typedef struct {
 	uint8_t weather;
 } pet_wfc_weather_pkt_s;
 
+typedef struct {
+
+	int8_t rssi;
+
+	pex_uuid_t id;
+	uint8_t sprite;
+
+	pet_exchange_state_pkt_s pex_state;
+} pet_uart_srvc_rssi_pkt_s;
+
+uint16_t d_u16(uint8_t *buffer);
+
 int serialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer);
 bool deserialize_pet_personality_pkt(pet_personality_pkt_s *pkt, uint8_t *buffer);
 
@@ -122,5 +140,8 @@ bool deserialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pk
 bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer);
 bool deserialize_pet_wfc_rtc_pkt(pet_wfc_rtc_pkt_s *pkt, uint8_t *buffer);
 bool deserialize_pet_wfc_weather_pkt(pet_wfc_weather_pkt_s *pkt, uint8_t *buffer);
+
+int serialize_pet_uart_srvc_rssi_pkt(pet_uart_srvc_rssi_pkt_s *pkt, uint8_t *buffer);
+bool deserialize_pet_uart_srvc_rssi_pkt(pet_uart_srvc_rssi_pkt_s *pkt, uint8_t *buffer);
 
 #endif

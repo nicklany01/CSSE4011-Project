@@ -1,8 +1,16 @@
+from datetime import datetime
+
 # WARNING: keep sync'd with comms.h
 class PET_WFC_DEMO_CMDS:
 	CHANGE_SCENE = 0
 	CHANGE_MOOD = 1
 	CHANGE_TIME = 2
+
+	ADD_FRIEND = 3
+	ADD_ENEMY = 4
+
+	REM_FRIEND = 5
+	REM_ENEMY = 6
 
 class SPRITE:
 	ZERO = 0
@@ -11,12 +19,13 @@ class SPRITE:
 	GRAPE = 3
 	BAJA_BLAST = 4
 
-
 class PET_PKT_ID:
 	PPY_PERSONALITY = 0
+
 	PEX_STATE = 1
 	PEX_JOURNAL = 2
 	PEX_JOURNAL_EVT = 3
+
 	WFC_DEMO_COMMAND = 4
 	WFC_RTC_UPDATE = 5
 	WFC_WEATHER_UPDATE = 6

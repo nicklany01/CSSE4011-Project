@@ -208,6 +208,21 @@ void scenes_set_time(mod_time_e time) {
 	scenes_state.modifier_time = time;
 }
 
+void scenes_set_temp_from_int_c(int8_t c) {
+
+	if (c < 0) {
+		scenes_state.modifier_temp = TEMP_FRIGID;
+	} else if (c < 18) {
+		scenes_state.modifier_temp = TEMP_COLD;
+	} else if (c < 25) {
+		scenes_state.modifier_temp = TEMP_NEUTRAL;
+	} else if (c < 35) {
+		scenes_state.modifier_temp = TEMP_WARM;
+	} else {
+		scenes_state.modifier_temp = TEMP_BOILING;
+	}
+}
+
 void scenes_init_character(main_scenes_e scene) {
 
 	lv_obj_t *character;

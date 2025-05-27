@@ -11,6 +11,8 @@ from pet_app_helpers import PET_WFC_DEMO_CMDS, SPRITE, PET_PKT_ID, PET_BLE_ADV_P
 BLE_SIENNA_MF_ID = 0x6943
 SIENNA_MASTER_PEX = 0x4369
 
+JOURNAL_REQUEST_MAGIC_NUM = 127
+
 BLE_UUID_SRV_PPY = "4A259CE4-4369-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_PPY_RX = "4A259CE4-4770-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_PPY_TX = "4A259CE4-4771-4153-AD28-B8D61B4F447A"
@@ -333,13 +335,20 @@ def test_ppy_pkt():
 	print("Packets are NOT equal!")
 	return False
 
+def notify_cb(characteristic, data):
+	print(f"Got notify to {characteristic} with {data}")
 
 async def main():
 
 	demo_pkt = PetWFCDemoCmdPkt()
 
 	test_ppy_pkt()
-	return
+
+	ppy_pkt = PetPPYPersonalityPkt()
+	ppy_pkt.randomize()
+
+	jrnl_request_pkt = PetPEXJournalEvtPkt()
+	jrnl_request_pkt.index = JOURNAL_REQUEST_MAGIC_NUM
 
 	while True:
 
@@ -356,6 +365,8 @@ async def main():
 			print(service)
 			for char in service.characteristics:
 				print("\t", char)
+
+		await client.start_notify(BLE_UUID_CHR_PPY_RX, notify_cb)
 
 		# SEND PPY UPDATE
 		tx_bytes = ppy_pkt.serialize()
