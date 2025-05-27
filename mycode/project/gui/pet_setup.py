@@ -1,6 +1,7 @@
 import json
 
 import config
+import mapping
 from enums import Scene, Time, Weather, Food, Drink, Sprite
 
 class PetMood():
@@ -85,6 +86,20 @@ class Pet():
 		self.friends = []
 		self.journal = []
 
+	def update_config(self, name: str, sprite: str, energy_threshold: int, health_threshold: int,
+				   interaction_threshold: int, fav_scene: str, fav_time: str, fav_weather: str,
+				   fav_food: str, fav_drink: str):
+		self.name = name
+		self.sprite = mapping.sprite_type_map.index(sprite)
+		self.energy_threshold = energy_threshold
+		self.health_threshold = health_threshold
+		self.interation_threshold = interaction_threshold
+		self.favourites.scene = mapping.scene_map.index(fav_scene)
+		self.favourites.time = mapping.time_map.index(fav_time)
+		self.favourites.weather = mapping.weather_map.index(fav_weather)
+		self.favourites.food = mapping.food_map.index(fav_food)
+		self.favourites.drink = mapping.drink_map.index(fav_drink)
+
 	def save_config(self):
 		pet_config = {}
 		pet_config["id"] = self.id
@@ -116,5 +131,5 @@ class Pet():
 		for entry in self.journal:
 			pet_config["journal"].append(entry)
 
-		with open(f"pet_{self.id}.json", "w") as f:
+		with open(f"data/pet_{self.id}.json", "w") as f:
 			json.dump(pet_config, f, indent=4)

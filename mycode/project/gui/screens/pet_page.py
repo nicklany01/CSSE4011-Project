@@ -5,9 +5,9 @@ import pet_setup
 import mapping
 import config
 
-COLOUR_ACTIVE = "#DCD0B7"
-COLOUR_INACTIVE = "#BDAE91"
-COLOUR_BACKGROUND = "#f5eedb"
+import screens.pet_config
+import screens.pet_journal
+import screens.pet_status
 
 class PetPage(tk.Frame):
     def __init__(self, root: tk.Tk):
@@ -17,8 +17,8 @@ class PetPage(tk.Frame):
         self.pet: pet_setup.Pet = root.selected_pet
 
         # Sidebar
-        self.frm_sidebar = tk.Frame(self, bg=COLOUR_INACTIVE, width=200)
-        self.frm_sidebar.pack(side=tk.LEFT, fill=tk.Y)
+        self.frm_sidebar = tk.Frame(self, bg=config.COLOUR_INACTIVE, width=200)
+        self.frm_sidebar.pack(side="left", fill="y")
 
         self.tabs = {
             "Home": {
@@ -48,14 +48,14 @@ class PetPage(tk.Frame):
         }
 
         for tab_name in self.tabs:
-            frm_tab = tk.Frame(self.frm_sidebar, bg=COLOUR_INACTIVE, padx=10, pady=5)
-            frm_tab.pack(fill=tk.X)
+            frm_tab = tk.Frame(self.frm_sidebar, bg=config.COLOUR_INACTIVE, padx=10, pady=5)
+            frm_tab.pack(fill="x")
 
-            lbl_icon = tk.Label(frm_tab, image=self.tabs[tab_name]["img"], bg=COLOUR_INACTIVE)
-            lbl_icon.pack(side=tk.LEFT)
+            lbl_icon = tk.Label(frm_tab, image=self.tabs[tab_name]["img"], bg=config.COLOUR_INACTIVE)
+            lbl_icon.pack(side="left")
 
-            self.tabs[tab_name]["lbl"] = tk.Label(frm_tab, text=tab_name, bg=COLOUR_INACTIVE, font=("Consolas", 16))
-            self.tabs[tab_name]["lbl"].pack(side=tk.LEFT, padx=(10, 100))
+            self.tabs[tab_name]["lbl"] = tk.Label(frm_tab, text=tab_name, bg=config.COLOUR_INACTIVE, font=("Consolas", 16))
+            self.tabs[tab_name]["lbl"].pack(side="left", padx=(10, 100))
 
             # Make tab row clickable
             def bind_all(widget, tabname):
@@ -68,23 +68,37 @@ class PetPage(tk.Frame):
 
         # Content side
         self.frm_content = tk.Frame(self, bg="white")
-        self.frm_content.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.frm_content.pack(side="left", fill="both", expand=True)
 
         # Banner
-        self.frm_banner = tk.Frame(self.frm_content, bg=COLOUR_BACKGROUND, height=180)
-        self.frm_banner.pack(fill=tk.X)
+        self.frm_banner = tk.Frame(self.frm_content, bg=config.COLOUR_BACKGROUND, height=180)
+        self.frm_banner.pack(fill="x")
         self.cvs_bg = tk.Canvas(self.frm_banner, height=180)
         self.cvs_bg.pack(fill="both", expand=True)
 
         self.bg_image = ImageTk.PhotoImage(file="assets/home.png")
         self.cvs_bg.create_image(0, 0, image=self.bg_image, anchor="nw")
 
-        self.img_banner = ImageTk.PhotoImage(Image.open(f"assets/{mapping.sprite_map[self.pet.sprite]}").resize((110, 150)))
+        self.img_banner = ImageTk.PhotoImage(Image.open(f"assets/{mapping.sprite_file_map[self.pet.sprite]}").resize((110, 150)))
         self.cvs_bg.create_image(500, 15, image=self.img_banner, anchor="ne")
 
         # Screen
-        self.frm_screen = tk.Frame(self.frm_content, bg=COLOUR_BACKGROUND)
-        self.frm_screen.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.cvs_content = tk.Canvas(self.frm_content, bg=config.COLOUR_BACKGROUND)
+        self.srcl_content = tk.Scrollbar(self, orient="vertical", command=self.cvs_content.yview)
+        self.frm_screen = tk.Frame(self.cvs_content, bg=config.COLOUR_BACKGROUND)
+
+        self.cvs_content.create_window((0, 0), window=self.frm_screen, anchor="nw")
+
+        self.frm_screen.bind("<Configure>", lambda e: self.cvs_content.configure(scrollregion=self.cvs_content.bbox("all")))
+        self.frm_screen.bind_all("<MouseWheel>", lambda e: self.cvs_content.yview_scroll(int(-1*(e.delta/100)), "units"))
+        self.frm_screen_id = self.cvs_content.create_window((0, 0), window=self.frm_screen, anchor="nw")
+        self.cvs_content.bind("<Configure>", lambda e: self.cvs_content.itemconfig(self.frm_screen_id, width=e.width))
+
+        self.cvs_content.configure(yscrollcommand=self.srcl_content.set)
+
+        # self.frm_screen.pack(side="left", fill="both", expand=True)
+        self.cvs_content.pack(side="left", fill="both", expand=True)
+        self.srcl_content.pack(side="right", fill="y")
 
         self.select_tab("Status")
 
@@ -92,11 +106,11 @@ class PetPage(tk.Frame):
     def select_tab(self, name: str):
         for tab_name in self.tabs:
             if tab_name == name:
-                self.tabs[tab_name]["frame"].configure(bg=COLOUR_ACTIVE)
-                self.tabs[tab_name]["lbl"].configure(bg=COLOUR_ACTIVE)
+                self.tabs[tab_name]["frame"].configure(bg=config.COLOUR_ACTIVE)
+                self.tabs[tab_name]["lbl"].configure(bg=config.COLOUR_ACTIVE)
             else:
-                self.tabs[tab_name]["frame"].configure(bg=COLOUR_INACTIVE)
-                self.tabs[tab_name]["lbl"].configure(bg=COLOUR_INACTIVE)
+                self.tabs[tab_name]["frame"].configure(bg=config.COLOUR_INACTIVE)
+                self.tabs[tab_name]["lbl"].configure(bg=config.COLOUR_INACTIVE)
 
         self.clear_tab()
         self.tabs[name]["command"]()
@@ -108,6 +122,9 @@ class PetPage(tk.Frame):
     def show_home(self):
         self.root.selected_pet = None
         self.root.current_frame_num.set(config.FRAME_HOME)
+
+    def show_settings(self):
+        screens.pet_config.PetConfig(self.frm_screen, self, self.pet).pack(fill="x", expand=True)
 
     def show_status(self):
         tk.Label(self.frm_screen, text=f"{self.pet.name}'s Status", font=("Arial", 20), bg="white").pack(pady=20)
@@ -126,7 +143,3 @@ class PetPage(tk.Frame):
         tk.Label(self.frm_screen, text="Journal Entries", font=("Arial", 20), bg="white").pack(pady=20)
         for entry in self.pet.journal:
             tk.Label(self.frm_screen, text=f"• {entry}", font=("Arial", 12), anchor="w", bg="white").pack(fill=tk.X, padx=20, pady=2)
-
-    def show_settings(self):
-        tk.Label(self.frm_screen, text="Settings", font=("Arial", 20), bg="white").pack(pady=20)
-        tk.Label(self.frm_screen, text="(Settings UI coming soon...)", font=("Arial", 12), bg="white").pack()
