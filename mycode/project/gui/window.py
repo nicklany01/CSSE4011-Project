@@ -5,6 +5,7 @@ from typing import Any
 import config
 import screens.homepage
 import pet_setup
+import screens.pet_page
 
 
 class GUIWindow(tk.Tk):
@@ -54,7 +55,7 @@ class GUIWindow(tk.Tk):
         if frame_index == config.FRAME_HOME:
             screen = screens.homepage.HomeScreen(self)
         elif frame_index == config.FRAME_PET_CONFIG:
-            screen = screens.homepage.HomeScreen(self)
+            screen = screens.pet_page.PetPage(self)
         elif frame_index == config.FRAME_COMMUNITY_JOURNAL:
             screen = screens.homepage.HomeScreen(self)
         else:

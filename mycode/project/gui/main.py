@@ -1,7 +1,5 @@
 import window
 import pet_setup
-     
-
 
 def comms_setup():
 	pass
