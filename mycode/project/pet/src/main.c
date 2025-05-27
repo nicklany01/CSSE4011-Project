@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include <lvgl.h>
 #include <lvgl_input_device.h>
@@ -19,6 +20,11 @@
 #include "os_uart.h"
 #include "personality.h"
 
+//#include "sound.h"
+#include "mood.h"
+#include "rtc.h"
+#include "mpu6886.h"
+
 #define GAME_EVT_JOURNAL_RX_DONE 0x01
 #define GAME_EVT_OTHER_PET_CONNECTED 0x02
 #define GAME_EVT_OTHER_PET_RSSI 0x04
@@ -26,8 +32,11 @@
 
 #define GAME_EVTS_ALL GAME_EVT_JOURNAL_RX_DONE | GAME_EVT_OTHER_PET_CONNECTED | GAME_EVT_OTHER_PET_RSSI | GAME_EVT_RTC_UPDATED
 
+#define UART_JOURNAL_TX_COOLDOWN 100
+
 struct k_timer comms_state_timer;
 struct k_event game_event_block;
+struct k_sem uart_srvc_lock;
 
 pet_exchange_state_pkt_s pex_state_pkt;
 pet_exchange_state_pkt_s their_pex_state_pkt;
@@ -39,10 +48,31 @@ pet_personality_pkt_s my_pet_ppy_pkt;
 pet_personality_pkt_s their_pet_ppy_pkt;
 
 pet_wfc_pkt_demo_cmd_s pet_wfc_demo_pkt;
-pet_wfc_rtc_pkt_s pet_wfc_rtc_pkt;
+// NOTE: this will control the initial RTC time
+pet_wfc_rtc_pkt_s pet_wfc_rtc_pkt = {
+	.day = 17,
+	.month = 3,
+	.year = 102,
+
+	.hrs = 13,
+	.mins = 0,
+	.secs = 0
+};
 pet_wfc_weather_pkt_s pet_wfc_weather_pkt;
 
 pet_uart_srvc_rssi_pkt_s pet_uart_srvc_rssi_pkt;
+
+struct tm time_state_container = {
+	.tm_hour = 0,
+	.tm_min = 0,
+	.tm_sec = 0,
+
+	.tm_mday = 0,
+	.tm_mon = 0,
+	.tm_year = 0
+};
+
+time_t epoch;
 
 os_uart_passthru_s uart_passthru_rx = {
 	.len = -1,
@@ -53,6 +83,17 @@ os_uart_passthru_s uart_passthru_tx = {
 	.len = -1,
 	.buff = {0}
 };
+
+void update_time_from_pkt() {
+
+	time_state_container.tm_hour = pet_wfc_rtc_pkt.hrs;
+	time_state_container.tm_min = pet_wfc_rtc_pkt.mins;
+	time_state_container.tm_sec = pet_wfc_rtc_pkt.secs;
+
+	time_state_container.tm_mday = pet_wfc_rtc_pkt.day;
+	time_state_container.tm_mon = pet_wfc_rtc_pkt.month;
+	time_state_container.tm_year = pet_wfc_rtc_pkt.year + 1900;
+}
 
 void init_personality() {
 
@@ -86,6 +127,10 @@ void update_personality() {
 
 void comms_state_timeout(struct k_timer *timer) {
 
+	if (k_sem_take(&uart_srvc_lock, K_NO_WAIT)) {
+		return;
+	}
+
 	pex_state_pkt.scene = scenes_state.main_scene;
 	pex_state_pkt.scene_weather = scenes_state.modifier_weather;
 	pex_state_pkt.scene_mood = scenes_state.modifier_mood;
@@ -100,6 +145,18 @@ void comms_state_timeout(struct k_timer *timer) {
 
 	uart_passthru_rx.len = serialize_pet_personality_pkt(&my_pet_ppy_pkt, uart_passthru_rx.buff);
 	os_uart_passthru(&uart_passthru_rx);
+
+	k_sem_give(&uart_srvc_lock);
+}
+
+uint16_t get_since_epoch() {
+
+	rtc_get_datetime(&time_state_container.tm_year, &time_state_container.tm_mon,
+		&time_state_container.tm_mday, &time_state_container.tm_hour,
+		&time_state_container.tm_min, &time_state_container.tm_sec);
+
+	time_t current = mktime(&time_state_container);
+	return (uint16_t)(current - epoch);
 }
 
 void process_ble_passthru_packet() {
@@ -159,6 +216,12 @@ void process_ble_passthru_packet() {
 		case PET_PKT_WFC_RTC_UPDATE:
 			deserialize_pet_wfc_rtc_pkt(&pet_wfc_rtc_pkt, uart_passthru_rx.buff);
 
+			update_time_from_pkt();
+			epoch = mktime(&time_state_container);
+
+			rtc_set_datetime(pet_wfc_rtc_pkt.year, pet_wfc_rtc_pkt.month,
+				pet_wfc_rtc_pkt.day, pet_wfc_rtc_pkt.hrs,
+				pet_wfc_rtc_pkt.mins, pet_wfc_rtc_pkt.secs);
 			break;
 
 		case PET_PKT_PPY_PERSONALITY:
@@ -182,11 +245,18 @@ void process_ble_passthru_packet() {
 		case PET_PKT_PEX_JOURNAL_EVT:
 			deserialize_pet_exchange_journal_evt_pkt(&their_pex_journal_evt_pkt, uart_passthru_rx.buff);
 
-			if (their_pex_journal_evt_pkt.index == JOURNAL_REQUEST_MAGIC_NUM) {
-				// send my journal
-				for (int i = 0; i < journal_idx; i++) {
+			if (their_pex_journal_evt_pkt.index == 0) {
+				journal_partner_alloc(their_pet_ppy_pkt.id);
 
-					my_pex_journal_evt_pkt.index = i == (journal_idx - 1)
+			} else if (their_pex_journal_evt_pkt.index == JOURNAL_REQUEST_MAGIC_NUM) {
+				// send my journal
+				k_sem_take(&uart_srvc_lock, K_FOREVER);
+
+				int to_tx = journal_idx;
+
+				for (int i = 0; i < to_tx; i++) {
+
+					my_pex_journal_evt_pkt.index = i == (to_tx - 1)
 						? JOURNAL_FINISHED_MAGIC_NUM
 						: i;
 
@@ -195,7 +265,14 @@ void process_ble_passthru_packet() {
 					uart_passthru_tx.len = serialize_pet_exchange_journal_evt_pkt(
 						&my_pex_journal_evt_pkt,  uart_passthru_tx.buff);
 					os_uart_passthru(&uart_passthru_tx);
+
+					// make sure we dont miss any packets here
+					// its ok for this to be hacky and take longer
+					// since this transfer typically only happens once
+					k_sleep(K_MSEC(UART_JOURNAL_TX_COOLDOWN));
 				}
+
+				k_sem_give(&uart_srvc_lock);
 
 				break;
 			}
@@ -261,7 +338,7 @@ static void thread_game_handler(void *a, void *b, void *c) {
 	uint32_t game_events = 0;
 
 	// start our day :)
-	journal_add_entry(JOURNAL_EVT_WAKE);
+	journal_add_entry(JOURNAL_EVT_WAKE, get_since_epoch());
 
 	while (true) {
 
@@ -272,17 +349,17 @@ static void thread_game_handler(void *a, void *b, void *c) {
 		}
 
 		if (game_events & GAME_EVT_OTHER_PET_CONNECTED) {
-			journal_add_entry(JOURNAL_EVT_VISIT);
+			journal_add_entry(JOURNAL_EVT_VISIT, get_since_epoch());
 		}
 
 		if (game_events & GAME_EVT_OTHER_PET_RSSI) {
 
 			switch (friends_pex_id_is_what(pet_uart_srvc_rssi_pkt.id)) {
 				case FRIENDSHIP_FRIEND:
-					journal_add_entry(JOURNAL_EVT_PROX_FRIEND);
+					journal_add_entry(JOURNAL_EVT_PROX_FRIEND, get_since_epoch());
 					break;
 				case FRIENDSHIP_ENEMY:
-					journal_add_entry(JOURNAL_EVT_PROX_ENEMY);
+					journal_add_entry(JOURNAL_EVT_PROX_ENEMY, get_since_epoch());
 					break;
 
 				default:
@@ -306,6 +383,19 @@ int main() {
 	if (!device_is_ready(display_dev)) {
 		return 0;
 	}
+
+	k_sem_init(&uart_srvc_lock, 1, 1);
+
+	update_time_from_pkt();
+	epoch = mktime(&time_state_container);
+
+	rtc_set_datetime(pet_wfc_rtc_pkt.year, pet_wfc_rtc_pkt.month,
+		pet_wfc_rtc_pkt.day, pet_wfc_rtc_pkt.hrs,
+		pet_wfc_rtc_pkt.mins, pet_wfc_rtc_pkt.secs);
+
+	mood_init();
+	//sound_init();
+	mpu6886_init();
 
 	init_personality();
 

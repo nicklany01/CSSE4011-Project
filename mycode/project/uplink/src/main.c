@@ -71,6 +71,14 @@ void process_uart_packet() {
 			my_mf_data[BLE_ADV_PEX_ID_HIGH] = pet_ppy_pkt.id >> 8;
 			my_mf_data[BLE_ADV_PEX_ID_LOW] = pet_ppy_pkt.id & 0xFF;
 			my_mf_data[BLE_ADV_MY_SPRITE] = pet_ppy_pkt.sprite;
+
+			if (os_ble_state.state == OS_BLE_STATE_CONNECTED) {
+				ble_tx.charac = BLE_UUID_16_CHR_PPY_RX;
+				ble_tx.len = uart_passthru_rx.len;
+				memcpy(ble_tx.buff, uart_passthru_rx.buff, ble_tx.len);
+
+				os_ble_notify(&ble_tx);
+			}
 			break;
 
 		case PET_PKT_PEX_STATE:
@@ -79,6 +87,14 @@ void process_uart_packet() {
 
 			//deserialize_pet_exchange_state_pkt(&pet_pex_state_pkt, uart_passthru_rx.buff);
 			memcpy(my_mf_data + BLE_ADV_PEX_STATE_START, uart_passthru_rx.buff + 1, 7);
+
+			if (os_ble_state.state == OS_BLE_STATE_CONNECTED) {
+				ble_tx.charac = BLE_UUID_16_CHR_PEX_RX;
+				ble_tx.len = uart_passthru_rx.len;
+				memcpy(ble_tx.buff, uart_passthru_rx.buff, ble_tx.len);
+
+				os_ble_notify(&ble_tx);
+			}
 			break;
 
 		case PET_PKT_PEX_JOURNAL_EVT:
@@ -86,7 +102,7 @@ void process_uart_packet() {
 
 			ble_tx.charac = BLE_UUID_16_CHR_PEX_RX;
 			ble_tx.len = uart_passthru_rx.len;
-			memcpy(ble_tx.buff, uart_passthru_rx.buff + 1, ble_tx.len);
+			memcpy(ble_tx.buff, uart_passthru_rx.buff, ble_tx.len);
 
 			os_ble_notify(&ble_tx);
 			break;

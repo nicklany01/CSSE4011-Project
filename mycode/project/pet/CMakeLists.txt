@@ -6,5 +6,31 @@ target_include_directories(app PRIVATE ../../include)
 
 target_sources(app PRIVATE ${app_sources} ${lib_sources})
 
-target_sources(app PRIVATE src/bitmaps/face_angry.c src/bitmaps/face_happy.c src/bitmaps/face_sad.c src/bitmaps/face_sleepy.c src/bitmaps/scene_beach_day.c src/bitmaps/scene_beach_night.c src/bitmaps/scene_forest_day.c src/bitmaps/scene_forest_night.c src/bitmaps/scene_meadow_day.c src/bitmaps/scene_meadow_night.c src/bitmaps/scene_shop_day.c src/bitmaps/sprite_base.c src/main.c src/personality.c src/scenes.c src/state.c src/os_ble.c ../../lib/journal.c ../../lib/friends.c ../../lib/comms.c ../../lib/os_uart.c ../../lib/ble_uuid.c)
+target_sources(app PRIVATE
+	src/bitmaps/face_angry.c
+	src/bitmaps/face_happy.c
+	src/bitmaps/face_sad.c
+	src/bitmaps/face_sleepy.c
+	src/bitmaps/scene_beach_day.c
+	src/bitmaps/scene_beach_night.c
+	src/bitmaps/scene_forest_day.c
+	src/bitmaps/scene_forest_night.c
+	src/bitmaps/scene_meadow_day.c
+	src/bitmaps/scene_meadow_night.c
+	src/bitmaps/scene_shop_day.c
+	src/bitmaps/sprite_base.c
+	src/main.c
+	src/personality.c
+	src/scenes.c
+	src/state.c
+	src/os_ble.c
+	../../lib/journal.c
+	../../lib/friends.c
+	../../lib/comms.c
+	../../lib/os_uart.c
+	../../lib/ble_uuid.c
+	../../lib/mpu6886.c
+	../../lib/rtc.c
+	../../lib/mood.c
+)
 

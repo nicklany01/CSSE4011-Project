@@ -5,9 +5,13 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "friends.h"
+
 #define JOURNAL_MAX_ENTRIES 64
 #define JOURNAL_FINISHED_MAGIC_NUM 96
 #define JOURNAL_REQUEST_MAGIC_NUM 127
+
+#define JOURNAL_MAX_PARTNERS 6
 
 typedef enum {
 
@@ -45,13 +49,16 @@ typedef struct {
 } journal_entry_s;
 
 extern journal_entry_s journal[JOURNAL_MAX_ENTRIES];
-extern journal_entry_s journal_partner[JOURNAL_MAX_ENTRIES];
+extern journal_entry_s journal_partner[JOURNAL_MAX_PARTNERS][JOURNAL_MAX_ENTRIES];
 
 extern int journal_idx;
 extern int journal_idx_partner;
 
+void journal_purge();
+int journal_partner_find_idx(pex_uuid_t partner);
+void journal_partner_alloc(pex_uuid_t partner);
 void journal_dupe_entry(journal_entry_s *dst, journal_entry_s *src);
 void journal_partner_add_entry(journal_entry_s *entry);
-void journal_add_entry(journal_event_e event);
+void journal_add_entry(journal_event_e event, uint16_t timestamp);
 
 #endif

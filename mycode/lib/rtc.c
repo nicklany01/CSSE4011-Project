@@ -20,7 +20,7 @@ int rtc_set_datetime(uint16_t year, uint8_t month, uint8_t day,
                      uint8_t hour, uint8_t minute, uint8_t second)
 {
     struct rtc_time time_set = {
-        .tm_year = year - 1900,
+        .tm_year = year,
         .tm_mon = month - 1,
         .tm_mday = day,
         .tm_hour = hour,
@@ -39,8 +39,8 @@ int rtc_set_datetime(uint16_t year, uint8_t month, uint8_t day,
     return 0;
 }
 
-int rtc_get_datetime(uint16_t *year, uint8_t *month, uint8_t *day,
-                     uint8_t *hour, uint8_t *minute, uint8_t *second)
+int rtc_get_datetime(int *year, int *month, int *day,
+                     int *hour, int *minute, int *second)
 {
     struct rtc_time current_time;
     int ret = rtc_get_time(rtc_dev, &current_time);
@@ -61,8 +61,8 @@ int rtc_get_datetime(uint16_t *year, uint8_t *month, uint8_t *day,
 
 void rtc_print_datetime(void)
 {
-    uint16_t year;
-    uint8_t month, day, hour, minute, second;
+    int year;
+    int month, day, hour, minute, second;
     
     if (rtc_get_datetime(&year, &month, &day, &hour, &minute, &second) == 0) {
         LOG_INF("Current RTC time: %04d-%02d-%02d %02d:%02d:%02d",
