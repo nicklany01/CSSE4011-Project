@@ -12,7 +12,8 @@ struct mood_state pet_mood = {
     .happiness = 500,
     .energy = 500,
     .health = 500,
-    .interaction = 500
+    .interaction = 500,
+    .expression = EXPRESSION_NEUTRAL
 };
 
 struct k_mutex mood_mutex;
@@ -71,6 +72,40 @@ void mood_step() {
     pet_mood.energy = CLAMP(pet_mood.energy, 0, MAX_STATE_VALUE);
     pet_mood.health = CLAMP(pet_mood.health, 0, MAX_STATE_VALUE);
     pet_mood.interaction = CLAMP(pet_mood.interaction, 0, MAX_STATE_VALUE);
+
+    uint8_t happiness_expression = pet_mood.happiness / 200;
+
+    switch(happiness_expression) {
+        case 0:
+            pet_mood.expression = EXPRESSION_V_SAD;
+            break;
+        case 1:
+            pet_mood.expression = EXPRESSION_SAD;
+            break;
+        case 2:
+            pet_mood.expression = EXPRESSION_NEUTRAL;
+            break;
+        case 3:
+            pet_mood.expression = EXPRESSION_HAPPY;
+            break;
+        case 4:
+            pet_mood.expression = EXPRESSION_V_HAPPY;
+            break;
+        default:
+            pet_mood.expression = EXPRESSION_NEUTRAL;
+            break;
+    }
+
+    // special cases
+    if (pet_mood.energy < 100) { // TODO: add rtc time in here for sleepy
+        pet_mood.expression = EXPRESSION_SLEEPY;
+    }
+    if (pet_mood.health < 100) { // TODO: add detection for negative interaction with pet
+        pet_mood.expression = EXPRESSION_ANGRY; // angry if health is low
+    }
+    if (pet_mood.affection == 1000 && pet_mood.happiness == 1000) { // can add other special conditions so this is more rare. Maybe only rare variants of the pet can reach this?
+        pet_mood.expression = EXPRESSION_ENLIGHTENED; // special case for max happiness and affection
+    }
 }
 
 void mood_thread(void *arg1, void *arg2, void *arg3) {
@@ -81,12 +116,12 @@ void mood_thread(void *arg1, void *arg2, void *arg3) {
             mood_step();
             mpu6886_read_accel(&accel);
             accel_mag = mpu6886_get_adjusted_accel_magnitude(&accel);
-            LOG_INF("Accelerometer magnitude: %.2f", accel_mag);
+            // LOG_INF("Accelerometer magnitude: %.2f", accel_mag);
             if (accel_mag > 1) {
                 pet_mood.health -= 50;
                 pet_mood.health = CLAMP(pet_mood.health, 0, MAX_STATE_VALUE);
             }
-            mood_print(&pet_mood);
+            // mood_print(&pet_mood);
             k_mutex_unlock(&mood_mutex);
         }
         display_update_mood();
