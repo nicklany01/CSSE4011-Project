@@ -10,12 +10,14 @@ LOG_MODULE_REGISTER(mpu6886, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define MPU6886_WHO_AM_I_ID  0x19
 
-int mpu6886_init(const struct i2c_dt_spec *i2c_dev) {
+const struct i2c_dt_spec mpu6886_i2c = I2C_DT_SPEC_GET(DT_NODELABEL(mpu6886));
+
+int mpu6886_init() {
     uint8_t whoami;
     int ret;
 
     // Check device ID
-    ret = i2c_reg_read_byte_dt(i2c_dev, MPU6886_WHO_AM_I, &whoami);
+    ret = i2c_reg_read_byte_dt(&mpu6886_i2c, MPU6886_WHO_AM_I, &whoami);
     if (ret < 0) {
         LOG_ERR("Failed to read WHO_AM_I register");
         return ret;
@@ -27,14 +29,14 @@ int mpu6886_init(const struct i2c_dt_spec *i2c_dev) {
     }
 
     // Wake up device
-    ret = i2c_reg_write_byte_dt(i2c_dev, MPU6886_PWR_MGMT_1, 0x00);
+    ret = i2c_reg_write_byte_dt(&mpu6886_i2c, MPU6886_PWR_MGMT_1, 0x00);
     if (ret < 0) {
         LOG_ERR("Failed to wake up device");
         return ret;
     }
 
     // Set accelerometer range to ±8G (0x10)
-    ret = i2c_reg_write_byte_dt(i2c_dev, MPU6886_ACCEL_CONFIG, 0x10);
+    ret = i2c_reg_write_byte_dt(&mpu6886_i2c, MPU6886_ACCEL_CONFIG, 0x10);
     if (ret < 0) {
         LOG_ERR("Failed to set accelerometer range");
         return ret;
@@ -43,12 +45,12 @@ int mpu6886_init(const struct i2c_dt_spec *i2c_dev) {
     return 0;
 }
 
-int mpu6886_read_accel(const struct i2c_dt_spec *i2c_dev, mpu6886_accel_t *accel) {
+int mpu6886_read_accel(mpu6886_accel_t *accel) {
     uint8_t buf[6];
     int16_t raw_x, raw_y, raw_z;
     int ret;
 
-    ret = i2c_burst_read_dt(i2c_dev, MPU6886_ACCEL_XOUT_H, buf, sizeof(buf));
+    ret = i2c_burst_read_dt(&mpu6886_i2c, MPU6886_ACCEL_XOUT_H, buf, sizeof(buf));
     if (ret < 0) {
         LOG_ERR("Failed to read accelerometer data");
         return ret;
@@ -66,6 +68,6 @@ int mpu6886_read_accel(const struct i2c_dt_spec *i2c_dev, mpu6886_accel_t *accel
     return 0;
 }
 
-float get_adjusted_accel_magnitude(const mpu6886_accel_t *accel) {
+float mpu6886_get_adjusted_accel_magnitude(const mpu6886_accel_t *accel) {
     return sqrtf(accel->x * accel->x + accel->y * accel->y + (accel->z - 1) * (accel->z - 1));
 }

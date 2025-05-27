@@ -9,7 +9,6 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/drivers/gpio.h>
-
 #include <zephyr/drivers/hwinfo.h>
 
 #include "friends.h"
@@ -353,3 +352,30 @@ int main() {
 		k_sleep(K_MSEC(500));
 	}
 }
+/*
+=======
+#include <lvgl.h>
+#include <stdio.h>
+#include <string.h>
+#include "sound.h"
+#include "mood.h"
+#include <lvgl_input_device.h>
+
+void main(void)
+{
+    const struct device *display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
+    
+    mood_init();
+    sound_init();
+    mpu6886_init();
+    display_init(display_dev);
+
+    while (1) {
+        lv_timer_handler();
+        k_sleep(K_MSEC(10));
+    }
+}
+
+K_THREAD_DEFINE(mood_thread_id, MOOD_THREAD_STACK_SIZE, mood_thread, NULL, NULL, NULL, MOOD_THREAD_PRIORITY, 0, 0);
+>>>>>>> Nick
+*/

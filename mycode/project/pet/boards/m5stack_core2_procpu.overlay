@@ -97,4 +97,13 @@
 		compatible = "espressif,esp32-bt-hci";
 		status = "okay";
 	};
+
+};
+
+&i2c0 {
+    mpu6886: mpu6886@68 {
+        compatible = "invensense,mpu6886";
+        reg = <0x68>;
+        status = "okay";
+    };
 };

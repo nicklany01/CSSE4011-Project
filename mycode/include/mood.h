@@ -3,28 +3,45 @@
 
 #include <zephyr/kernel.h>
 
+#define MOOD_THREAD_STACK_SIZE 1024
+#define MOOD_THREAD_PRIORITY 7
+
 #define CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
 
 // These could be dependent on the pet attributes, but for now they are fixed
 // thresholds for happiness
 #define ENERGY_THRESHOLD 500
-#define NUTRITION_THRESHOLD 500
+#define HEALTH_THRESHOLD 500
 #define INTERACTION_THRESHOLD 500
+#define MAX_STATE_VALUE 1000
 
 // mood from 0 to 1000
 struct mood_state {
-    int16_t affection;
-    int16_t happiness;
-    int16_t energy;
-    int16_t nutrition;
-    int16_t interaction;
+    int16_t affection;  // grows if happiness is high
+    int16_t happiness;  // grows based on health, energy and interaction
+    int16_t energy;     // increases by feeding, decreases from interaction
+    int16_t health;     // increases by when energy is above threshold, decreases from disruptions
+    int16_t interaction;// increases by meeting other pets
 };
 
 extern struct mood_state pet_mood;
+extern struct k_mutex mood_mutex;
 
+enum expression {
+    EXPRESSION_ENLIGHTENED,
+    EXPRESSION_V_HAPPY,
+    EXPRESSION_HAPPY,
+    EXPRESSION_NEUTRAL,
+    EXPRESSION_SAD,
+    EXPRESSION_V_SAD,
+    EXPRESSION_ANGRY,
+    EXPRESSION_SLEEPY
+};
+
+void mood_init();
 void mood_reset();
-void mood_step(struct mood_state *update);
+void mood_step();
 void mood_print(struct mood_state *state);
-void mood_thread();
+void mood_thread(void *arg1, void *arg2, void *arg3);
 
 #endif
