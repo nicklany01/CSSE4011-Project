@@ -1,0 +1,24 @@
+{
+    "id": 2,
+    "name": "Cam",
+    "sprite": 2,
+    "energy_threshold": 500,
+    "health_threshold": 500,
+    "interation_threshold": 500,
+    "mood": {
+        "affection": 500,
+        "happiness": 500,
+        "energy": 500,
+        "health": 500,
+        "interaction": 500
+    },
+    "favourites": {
+        "scene": 0,
+        "time": 0,
+        "weather": 0,
+        "food": 0,
+        "drink": 0
+    },
+    "friends": [],
+    "journal": []
+}
