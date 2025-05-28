@@ -439,6 +439,8 @@ async def main():
 	ppy_pkt = PetPPYPersonalityPkt()
 	ppy_pkt.randomize()
 
+	ppy_pkt.sprite = 1
+
 	while True:
 
 		pet = await find_ble_pet(0xBABE)

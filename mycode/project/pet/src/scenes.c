@@ -1,3 +1,5 @@
+#include <stddef.h>
+
 #include "scenes.h"
 #include "gfx_assets.h"
 
@@ -6,13 +8,37 @@ scene_state_s scenes_state = {
 	.main_scene = MAIN_SCENE_MEADOW,
 	.modifier_mood = MOD_MOOD_NEUTRAL,
 	.modifier_weather = MOD_WEATHER_SUNNY,
-	.modifier_time = MOD_TIME_DUSK
+	.modifier_time = MOD_TIME_DUSK,
+
+	.current_sprite = SPRITE_ZERO
 };
 
 int sprite_face_pos[SPRITE_MAX][2] = {
 
 	[SPRITE_ZERO] = {POSITION_X_CHAR_FACE, POSITION_Y_CHAR_FACE},
 	[SPRITE_ICE] = {POSITION_X_CHARACTER + 53, POSITION_Y_CHARACTER + 83}
+};
+
+const lv_image_dsc_t* sprite_0_mood_lookup[MOD_MOOD_MAX] = {
+	[MOD_MOOD_NEUTRAL] = &face_happy,
+	[MOD_MOOD_HAPPY] = &face_happy,
+	[MOD_MOOD_SAD] = &face_sad,
+	[MOD_MOOD_ANGRY] = &face_angry,
+	[MOD_MOOD_SLEEPY] = &face_sleepy,
+};
+
+const lv_image_dsc_t* sprite_1_mood_lookup[MOD_MOOD_MAX] = {
+	[MOD_MOOD_NEUTRAL] = &face_1_happy,
+	[MOD_MOOD_HAPPY] = &face_1_happy,
+	[MOD_MOOD_SAD] = &face_1_sad,
+	[MOD_MOOD_ANGRY] = &face_1_angry,
+	[MOD_MOOD_SLEEPY] = NULL
+};
+
+const lv_image_dsc_t *sprite_base_lookup[SPRITE_MAX] = {
+
+	[SPRITE_ZERO] = &sprite_base,
+	[SPRITE_ICE] = &sprite_ice
 };
 
 scene_obj_meadow_s scene_meadow = {
@@ -74,43 +100,54 @@ void scenes_set_main(main_scenes_e scene) {
 void scenes_character_update() {
 
 	lv_obj_t *character_face;
+	lv_obj_t *character;
+
+	const uint8_t *target_face = NULL;
+	const uint8_t *target_sprite = NULL;
 
 	switch (scenes_state.main_scene) {
 		case MAIN_SCENE_MEADOW:
 			character_face = scene_meadow.character_face;
+			character = scene_meadow.character;
 			break;
 		case MAIN_SCENE_BEACH:
 			character_face = scene_beach.character_face;
+			character = scene_beach.character;
 			break;
 		case MAIN_SCENE_CITY:
 			character_face = scene_city.character_face;
+			character = scene_city.character;
 			break;
 		case MAIN_SCENE_FOREST:
 			character_face = scene_forest.character_face;
+			character = scene_forest.character;
 			break;
 		case MAIN_SCENE_SHOP:
 			character_face = scene_shop.character_face;
+			character = scene_shop.character;
 			break;
 		default:
 			return;
 	}
 
-	switch (scenes_state.modifier_mood) {
-		case MOD_MOOD_NEUTRAL:
-		case MOD_MOOD_ANGRY:
-			lv_image_set_src(character_face, &face_angry);
+	switch (scenes_state.current_sprite) {
+		case SPRITE_ZERO:
+			target_face = sprite_0_mood_lookup[scenes_state.current_sprite];
 			break;
-		case MOD_MOOD_HAPPY:
-			lv_image_set_src(character_face, &face_happy);
-			break;
-		case MOD_MOOD_SAD:
-			lv_image_set_src(character_face, &face_sad);
-			break;
-		case MOD_MOOD_SLEEPY:
-			lv_image_set_src(character_face, &face_sleepy);
+		case SPRITE_ICE:
+			target_face = sprite_1_mood_lookup[scenes_state.current_sprite];
 			break;
 		default:
 			break;
+	}
+
+	lv_image_set_src(character, sprite_base_lookup[scenes_state.current_sprite]);
+	lv_obj_set_pos(character, POSITION_X_CHARACTER, POSITION_Y_CHARACTER);
+
+	if (target_face != NULL) {
+		lv_image_set_src(character_face, target_face);
+		lv_obj_set_pos(character_face, sprite_face_pos[scenes_state.current_sprite][0],
+			sprite_face_pos[scenes_state.current_sprite][1]);
 	}
 }
 
@@ -214,6 +251,11 @@ void scenes_set_time(mod_time_e time) {
 	scenes_state.modifier_time = time;
 }
 
+void scenes_set_sprite(sprite_s sprite) {
+	scenes_state.current_sprite = sprite;
+	scenes_character_update();
+}
+
 void scenes_set_temp_from_int_c(int8_t c) {
 
 	if (c < 0) {
@@ -276,11 +318,7 @@ void scenes_init_character(main_scenes_e scene) {
 			return;
 	}
 
-	lv_image_set_src(character, &sprite_base);
-	lv_obj_set_pos(character, POSITION_X_CHARACTER, POSITION_Y_CHARACTER);
-
-	lv_image_set_src(character_face, &face_happy);
-	lv_obj_set_pos(character_face, POSITION_X_CHAR_FACE, POSITION_Y_CHAR_FACE);
+	scenes_character_update();
 }
 
 void scenes_init() {

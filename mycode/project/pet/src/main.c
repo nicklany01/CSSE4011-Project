@@ -141,6 +141,7 @@ void init_personality() {
 
 	pet_pex_id = 0xBABE;
 	my_pet_ppy_pkt.id = pet_pex_id;
+	my_pet_ppy_pkt.sprite = their_pet_ppy_pkt.sprite;
 
 	my_pet_ppy_pkt.fav_drink = pet_favs.drink;
 	my_pet_ppy_pkt.fav_food = pet_favs.food;
@@ -163,6 +164,7 @@ void update_personality() {
 
 	// update my_pet_ppy_pkt
 	init_personality();
+	scenes_set_sprite(my_pet_ppy_pkt.sprite);
 }
 
 void comms_state_timeout(struct k_timer *timer) {

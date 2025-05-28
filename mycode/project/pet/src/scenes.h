@@ -78,6 +78,7 @@ typedef enum {
 	MOD_MOOD_SAD,
 	MOD_MOOD_ANGRY,
 	MOD_MOOD_SLEEPY,
+	MOD_MOOD_SICK,
 
 	MOD_MOOD_MAX
 } mod_mood_e;
@@ -120,6 +121,7 @@ typedef struct {
 
 	uint32_t colour_sky;
 	lv_obj_t *current_screen;
+	sprite_s current_sprite;
 
 } scene_state_s;
 
@@ -184,6 +186,7 @@ void scenes_set_time(mod_time_e time);
 void scenes_set_mood(mod_mood_e mood);
 void scenes_set_weather(mod_weather_e weather);
 void scenes_set_main(main_scenes_e scene);
+void scenes_set_sprite(sprite_s sprite);
 
 void scenes_set_temp_from_int_c(int8_t c);
 #endif
