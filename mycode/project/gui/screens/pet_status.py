@@ -16,7 +16,7 @@ class PetStatus(tk.Frame):
 
         frm_header = tk.Frame(self, bg=config.COLOUR_ACTIVE)
         frm_header.pack(padx=20, pady=20, fill="x", expand=True)
-        lbl_header = tk.Label(frm_header, text=f"{pet.name}'s Current Mood", font=("Consolas", 16, "bold"), bg=config.COLOUR_ACTIVE)
+        lbl_header = tk.Label(frm_header, text=f"{pet.name}'s Current Status", font=("Consolas", 16, "bold"), bg=config.COLOUR_ACTIVE)
         lbl_header.pack(ipady=20)
 
         self.mood = {
@@ -51,9 +51,19 @@ class PetStatus(tk.Frame):
         self.cvs_heatmap.pack()
         self.draw_gradient_bar(855, 30)
         self.cvs_heatmap.create_text(20, 15, fill="#4d5365", text=f"0", font=("Consolas", 14, "bold"))
+        self.cvs_heatmap.create_text(420, 15, fill="#4d5365", text=f"500", font=("Consolas", 14, "bold"))
         self.cvs_heatmap.create_text(820, 15, fill="#4d5365", text=f"1000", font=("Consolas", 14, "bold"))
 
         self.draw_mood_blocks()
+
+        self.frm_relationships = tk.Frame(self, bg=config.COLOUR_ACTIVE, padx=20, pady=20)
+        self.frm_relationships.pack(fill="x", expand=True, pady=(0, 20), padx=20)
+        tk.Label(self.frm_relationships, text="Relationships", bg=config.COLOUR_ACTIVE, font=("Consolas", 14, "bold")).pack(anchor="w", pady=(0, 10))
+        
+        row = tk.Frame(self.frm_relationships, bg=config.COLOUR_ACTIVE)
+        row.pack(fill="x", pady=5)
+        tk.Label(row, text="Friends", bg=config.COLOUR_ACTIVE, font=("Consolas", 12)).pack(side="top", anchor="w", pady=5)
+        tk.Label(row, text="Enemies", bg=config.COLOUR_ACTIVE, font=("Consolas", 12)).pack(side="top", anchor="w", pady=5)
 
         self.after(2000, self.update_statuses)
 

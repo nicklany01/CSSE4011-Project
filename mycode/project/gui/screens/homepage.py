@@ -34,16 +34,17 @@ class HomeScreen(tk.Frame):
         y_pos = 500
 
         for i, pet in enumerate(self.pets):
-            img = Image.open(f"assets/{mapping.sprite_file_map[pet.sprite]}").resize((170, 230))
+            img = Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[pet.sprite].lower()}_neutral.png").resize((200, 200))
             sprite_img = ImageTk.PhotoImage(img)
             self.images.append(sprite_img)
 
            
-            frm_pet = tk.Frame(root, bg="white")
-            btn = tk.Button(frm_pet, image=sprite_img, command=lambda p=pet: self.select_pet(p), borderwidth=0)
+            frm_pet = tk.Frame(root, bg="#5C9FD3")
+            btn = tk.Button(frm_pet, image=sprite_img, command=lambda p=pet: self.select_pet(p), 
+                            borderwidth=0, bg="white")
             btn.pack()
 
-            name_lbl = tk.Label(frm_pet, text=pet.name, font=("Consolas", 14), bg="white")
+            name_lbl = tk.Label(frm_pet, text=pet.name, font=("Consolas", 14, "bold"), bg="#5C9FD3", fg="white")
             name_lbl.pack(pady=(5, 10))
 
             self.cvs_bg.create_window(start_x + i * (spacing + 150), y_pos, window=frm_pet)

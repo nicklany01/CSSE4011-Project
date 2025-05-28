@@ -1,6 +1,4 @@
-sprite_file_map = ["sprite_zero.png", "sprite_cherry.png", "sprite_ice.png", "sprite_grape.png", "sprite_baja_blast.png"]
-
-sprite_type_map = ["Zero", "Cherry", "Ice", "Grape", "Baja Blast"]
+sprite_type_map = ["Zero", "Cherry", "Ice"]
 
 scene_map = ["Meadow", "Beach", "Forest", "City", "Shop"]
 

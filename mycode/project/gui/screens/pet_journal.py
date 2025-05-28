@@ -32,10 +32,16 @@ class PetJournal(tk.Frame):
         tk.Label(frm_entry, text=f"{journal_entry}", bg=config.COLOUR_INACTIVE, font=("Consolas", 12)).pack(side="left")
 
     def write_journal(self):
+        count = 0
         for journal_entry in self.pet.journal.entries:
             if journal_entry is None:
                 continue
+            count += 1
             self.add_entry(journal_entry)
+
+        if count == 0:
+            tk.Label(self.frm_journal, text=f"Nothing to write today...", bg=config.COLOUR_INACTIVE, font=("Consolas", 12)).pack(pady=5, side="left")
+
 
     def update_display(self):
         for widget in self.frm_journal.winfo_children():

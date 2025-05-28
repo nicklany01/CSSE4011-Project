@@ -56,8 +56,6 @@ class Sprite(Enum):
 	SPRITE_ZERO = 0
 	SPRITE_CHERRY = 1
 	SPRITE_ICE = 2
-	SPRITE_GRAPE = 3
-	SPRITE_BAJA_BLAST = 4
 
 class Scene(Enum):
 	MAIN_SCENE_MEADOW = 0
@@ -72,12 +70,12 @@ class Weather(Enum):
 	MOD_WEATHER_CLOUDY = 2
 	MOD_WEATHER_SNOWY = 3
 
-class Mood(Enum):
-	MOD_MOOD_NEUTRAL = 0
-	MOD_MOOD_HAPPY = 1
-	MOD_MOOD_SAD = 2
-	MOD_MOOD_ANGRY = 3
-	MOD_MOOD_SLEEPY = 4
+class Expression(Enum):
+	MOD_EXP_NEUTRAL = 0
+	MOD_EXP_HAPPY = 1
+	MOD_EXP_SAD = 2
+	MOD_EXP_ANGRY = 3
+	MOD_EXP_SLEEPY = 4
 
 class Time(Enum):
 	MOD_TIME_DAWN = 0

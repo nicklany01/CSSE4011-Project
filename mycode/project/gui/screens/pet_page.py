@@ -85,7 +85,7 @@ class PetPage(tk.Frame):
         self.bg_image = ImageTk.PhotoImage(file="assets/home.png")
         self.cvs_bg.create_image(0, 0, image=self.bg_image, anchor="nw")
 
-        self.img_banner = ImageTk.PhotoImage(Image.open(f"assets/{mapping.sprite_file_map[self.pet.sprite]}").resize((110, 150)))
+        self.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite].lower()}_neutral.png").resize((150, 150)))
         self.cvs_bg.create_image(500, 15, image=self.img_banner, anchor="ne")
 
         # Screen

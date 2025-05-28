@@ -1,7 +1,7 @@
 {
     "id": 1,
     "name": "Nic",
-    "sprite": 1,
+    "sprite": 2,
     "energy_threshold": 450,
     "health_threshold": 500,
     "interation_threshold": 500,

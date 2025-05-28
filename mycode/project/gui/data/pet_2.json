@@ -1,9 +1,9 @@
 {
     "id": 2,
     "name": "Cam",
-    "sprite": 2,
+    "sprite": 1,
     "energy_threshold": 500,
-    "health_threshold": 550,
+    "health_threshold": 590,
     "interation_threshold": 500,
     "mood": {
         "affection": 500,

@@ -3,7 +3,7 @@ import json
 import config
 import mapping
 import club.pet_app_helpers
-from enums import Scene, Time, Weather, Food, Drink, Sprite
+from enums import Scene, Time, Weather, Food, Drink, Sprite, Expression
 
 class PetMood():
     def __init__(self, affection: int=config.DEFAULT_AFFECTION, happiness: int=config.DEFAULT_HAPPINESS, 
@@ -17,9 +17,9 @@ class PetMood():
 
 
 class PetFavourites():
-    def __init__(self, scene: int=Scene.MAIN_SCENE_MEADOW, time: int=Time.MOD_TIME_MORNING, 
-				 weather: int=Weather.MOD_WEATHER_SUNNY, food: int=Food.FOOD_NONE, 
-				 drink: int=Drink.DRINK_NONE):
+    def __init__(self, scene: int=Scene.MAIN_SCENE_MEADOW.value, time: int=Time.MOD_TIME_MORNING.value, 
+				 weather: int=Weather.MOD_WEATHER_SUNNY.value, food: int=Food.FOOD_NONE.value, 
+				 drink: int=Drink.DRINK_NONE.value):
         self.scene = scene
         self.time = time
         self.weather = weather
@@ -38,24 +38,24 @@ class Pet():
 			with open(file_path) as f:
 				pet_config = json.load(f)
 
-			self.id = pet_config["id"]
-			self.name = pet_config["name"]
-			self.sprite = pet_config["sprite"]
-			self.energy_threshold = pet_config["energy_threshold"]
-			self.health_threshold = pet_config["health_threshold"]
-			self.interation_threshold = pet_config["interation_threshold"]
+			self.id: int = pet_config["id"]
+			self.name: str = pet_config["name"]
+			self.sprite: int = pet_config["sprite"]
+			self.energy_threshold: int = pet_config["energy_threshold"]
+			self.health_threshold: int = pet_config["health_threshold"]
+			self.interation_threshold: int = pet_config["interation_threshold"]
 
 			mood = pet_config["mood"]
-			self.mood = PetMood(mood["affection"], mood["happiness"], mood["energy"], mood["health"], mood["interaction"])
+			self.mood: PetMood = PetMood(mood["affection"], mood["happiness"], mood["energy"], mood["health"], mood["interaction"])
 
 			faves = pet_config["favourites"]
-			self.favourites = PetFavourites(faves["scene"], faves["time"], faves["weather"], faves["food"], faves["drink"])
+			self.favourites: PetFavourites = PetFavourites(faves["scene"], faves["time"], faves["weather"], faves["food"], faves["drink"])
 
-			self.friends = []
+			self.friends: list[int] = []
 			for friend in pet_config["friends"]:
 				self.friends.append(friend)
 
-			self.journal = club.pet_app_helpers.PetJournal()
+			self.journal: club.pet_app_helpers.PetJournal = club.pet_app_helpers.PetJournal()
 			for time, event in pet_config["journal"]:
 				journal_entry = club.pet_app_helpers.PetJournalEntry(time, event)
 				self.journal.add(journal_entry)
@@ -65,18 +65,19 @@ class Pet():
 			self.reset_pet()
 
 	def reset_pet(self):
-		self.id = 0
-		self.name = ""
-		self.sprite = Sprite.SPRITE_ZERO
+		self.id: int = 0
+		self.name: str = ""
+		self.sprite: int = Sprite.SPRITE_ZERO.value
+		self.expression: int = Expression.MOD_EXP_NEUTRAL.value
 
-		self.energy_threshold = 500
-		self.health_threshold = 500
-		self.interation_threshold = 500
+		self.energy_threshold: int = 500
+		self.health_threshold: int = 500
+		self.interation_threshold: int = 500
 
-		self.mood = PetMood()
-		self.favourites = PetFavourites()
-		self.friends = []
-		self.journal = club.pet_app_helpers.PetJournal()
+		self.mood: PetMood = PetMood()
+		self.favourites: PetFavourites = PetFavourites()
+		self.friends: list[int] = []
+		self.journal: club.pet_app_helpers.PetJournal = club.pet_app_helpers.PetJournal()
 
 	def update_config(self, name: str, sprite: str, energy_threshold: int, health_threshold: int,
 				   interaction_threshold: int, fav_scene: str, fav_time: str, fav_weather: str,

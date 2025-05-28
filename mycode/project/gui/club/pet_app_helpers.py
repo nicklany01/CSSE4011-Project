@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # WARNING: keep sync'd with comms.h
 class PET_WFC_DEMO_CMDS:
@@ -11,6 +11,8 @@ class PET_WFC_DEMO_CMDS:
 
 	REM_FRIEND = 5
 	REM_ENEMY = 6
+
+	GET_TIME = 7
 
 class SPRITE:
 	ZERO = 0
@@ -91,29 +93,43 @@ JOURNAL_FRIENDLY_STRINGS = {
 }
 
 class PetJournalEntry:
-    def __init__(self):
-        self.timestamp = 0
-        self.event = PET_JOURNAL_EVENTS.JOURNAL_EVT_WAKE
-	
-    def __init__(self, timestamp, event):
-        self.timestamp = timestamp
-        self.event = event
+	def __init__(self, timestamp: int=0, event=PET_JOURNAL_EVENTS.JOURNAL_EVT_WAKE):
 
-    def __str__(self):
+		self.timestamp = timestamp
+		self.event = event
 
-        return JOURNAL_FRIENDLY_STRINGS[self.event]
+	def __str__(self):
+
+		return f"{JOURNAL_FRIENDLY_STRINGS[self.event]}"
 
 class PetJournal:
 
 	def __init__(self):
 
-		self.entries: list[PetJournalEntry] = [None for i in range(0, JOURNAL_MAX_ENTRIES)]
+		self.pet_id = 0
+		self.entries = [None for i in range(0, JOURNAL_MAX_ENTRIES)]
 		self.index = 0
+		self.epoch = datetime.now()
+
+	def clear(self):
+		self.__init__()
+
+	def dupe(self, journal):
+		for entry in journal.entries:
+			if entry is None:
+				break
+
+			self.add(entry)
 
 	def add(self, entry):
 
+		new_entry = PetJournalEntry()
+
+		new_entry.timestamp = entry.timestamp
+		new_entry.event = entry.event
+
 		added_at = self.index
-		self.entries[self.index] = entry
+		self.entries[self.index] = new_entry
 
 		self.index = (self.index + 1) % JOURNAL_MAX_ENTRIES
 
@@ -121,3 +137,7 @@ class PetJournal:
 
 	def get(self, index):
 		return self.entries[index % JOURNAL_MAX_ENTRIES]
+
+	def __str__(self):
+		return "\n".join([f"{self.epoch + timedelta(seconds=entry.timestamp)}: {entry}" \
+			for entry in self.entries if entry is not None])

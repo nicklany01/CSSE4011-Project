@@ -128,7 +128,7 @@ class PetConfig(tk.Frame):
         self.pet.update_config(name, sprite, energy_threshold, health_threshold, interaction_threshold,
                                fav_scene, fav_time, fav_weather, fav_food, fav_drink)
         
-        self.container.img_banner = ImageTk.PhotoImage(Image.open(f"assets/{mapping.sprite_file_map[self.pet.sprite]}").resize((110, 150)))
+        self.container.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite]}_neutral.png").resize((150, 150)))
         self.container.cvs_bg.create_image(500, 15, image=self.container.img_banner, anchor="ne")
         
         self.pet.save_config()
