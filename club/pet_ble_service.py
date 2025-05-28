@@ -339,9 +339,15 @@ BLE_PKT_WFC_RTC_RX = PetWFCRtcPkt()
 async def find_ble_pet(pex_id):
 
 	print(f"Trying to find pet {pex_id}...")
+	sienna_devices = []
 
-	connect_dev = None
-	devices = await BleakScanner.discover(timeout=1, return_adv=True)
+	if pex_id == SIENNA_MASTER_PEX:
+		# we are in discover mode
+		timeout = 3
+	else:
+		timeout = 1
+
+	devices = await BleakScanner.discover(timeout=timeout, return_adv=True)
 
 	for device in devices:
 
@@ -360,12 +366,18 @@ async def find_ble_pet(pex_id):
 
 		print(f"Found pet device {adv_pex_id} {PET_BLE_ADV_POS.PEX_ID_HIGH}")
 
+		if pex_id == SIENNA_MASTER_PEX:
+			sienna_devices.append(adv_pex_id)
+
 		if adv_pex_id != pex_id:
 			continue
 
-		connect_dev = device
+		sienna_devices.append(device)
 
-	return connect_dev
+	if pex_id == SIENNA_MASTER_PEX:
+		return sienna_devices
+
+	return sienna_devices[0]
 
 async def pet_ble_retrieve_journal(client):
 
@@ -432,6 +444,16 @@ def pet_ble_wfc_notify_cb(characteristic, data):
 		BLE_PKT_WFC_RTC_RX.deserialize(data)
 		GAME_EVT_WFC_RX_RTC.set()
 
+async def pet_retrieve_rtc(client):
+
+	rtc_request_pkt = PetWFCDemoCmdPkt()
+	rtc_request_pkt.cmd_id = PET_WFC_DEMO_CMDS.GET_TIME
+
+	await client.write_gatt_char(BLE_UUID_CHR_WFC_TX, rtc_request_pkt.serialize(), response=False)
+	await GAME_EVT_WFC_RX_RTC.wait()
+
+	return BLE_PKT_WFC_RTC_RX.to_date()
+
 async def pet_retrieve_command(pex_id, command):
 
 	while True:
@@ -478,6 +500,10 @@ async def pet_ble_set_personality(pex_id, ppy_pkt):
 
 	await pet_send_packet(pex_id, ppy_pkt, BLE_UUID_CHR_PPY_TX)
 
+async def pet_ble_discover_pets():
+
+	return await find_ble_pet(SIENNA_MASTER_PEX)
+
 async def main():
 
 	demo_pkt = PetWFCDemoCmdPkt()
@@ -485,15 +511,21 @@ async def main():
 	ppy_pkt = PetPPYPersonalityPkt()
 	ppy_pkt.randomize()
 
-	ppy_pkt.sprite = 2
+	ppy_pkt.sprite = 0
 
-	pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
+	#pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
 
-	for pet in pet_journal:
-		print(f"JOURNAL OF PET {hex(pet)}")
-		print(pet_journal[pet])
+	#for pet in pet_journal:
+	#	print(f"JOURNAL OF PET {hex(pet)}")
+	#	print(pet_journal[pet])
 
+	pets_in_area = await pet_ble_discover_pets()
+	print(pets_in_area)
+#
 	await pet_ble_set_personality(0xBABE, ppy_pkt)
+
+	time = await pet_retrieve_command(0xBABE, pet_retrieve_rtc)
+	print(time)
 
 if __name__ == "__main__":
 	asyncio.run(main())
