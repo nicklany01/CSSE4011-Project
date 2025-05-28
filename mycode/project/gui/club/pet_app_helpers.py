@@ -93,10 +93,10 @@ JOURNAL_FRIENDLY_STRINGS = {
 }
 
 class PetJournalEntry:
-	def __init__(self, timestamp: int=0, event=PET_JOURNAL_EVENTS.JOURNAL_EVT_WAKE):
+	def __init__(self):
 
-		self.timestamp = timestamp
-		self.event = event
+		self.timestamp = 0
+		self.event = PET_JOURNAL_EVENTS.JOURNAL_EVT_WAKE
 
 	def __str__(self):
 
@@ -139,5 +139,5 @@ class PetJournal:
 		return self.entries[index % JOURNAL_MAX_ENTRIES]
 
 	def __str__(self):
-		return "\n".join([f"{self.epoch + timedelta(seconds=entry.timestamp)}: {entry}" \
+		return "\n\n".join([f"({self.epoch + timedelta(seconds=entry.timestamp)}) {entry}" \
 			for entry in self.entries if entry is not None])

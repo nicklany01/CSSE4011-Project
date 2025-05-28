@@ -2,6 +2,7 @@
     "id": 1,
     "name": "Nic",
     "sprite": 2,
+    "expression": 3,
     "energy_threshold": 450,
     "health_threshold": 500,
     "interation_threshold": 500,
@@ -19,6 +20,17 @@
         "food": 0,
         "drink": 0
     },
+    "attributes": {
+        "charisma": 1,
+        "confidence": 1,
+        "kindness": 1,
+        "patience": 1,
+        "lazy": 1,
+        "rude": 1,
+        "gaslight": 1,
+        "greedy": 1
+    },
     "friends": [],
+    "enemies": [],
     "journal": []
 }

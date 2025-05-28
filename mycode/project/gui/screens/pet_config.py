@@ -14,6 +14,12 @@ class PetConfig(tk.Frame):
         self.container = container
         self.pet = pet
 
+        # Header
+        frm_header = tk.Frame(self, bg=config.COLOUR_ACTIVE)
+        frm_header.pack(padx=20, pady=(20,0), fill="x", expand=True)
+        lbl_header = tk.Label(frm_header, text=f"Pet Personality & Attributes", font=("Consolas", 16, "bold"), bg=config.COLOUR_ACTIVE)
+        lbl_header.pack(ipady=20)
+
         # Configurable values
         self.pet_name = tk.StringVar(value=pet.name)
         self.ent_sprite = None
@@ -46,6 +52,17 @@ class PetConfig(tk.Frame):
                 "values": mapping.drink_map
             }
         }
+
+        # self.ent_attributes = {
+        #     "Charisma": None,
+        #     "Confidence": None,
+        #     "Kindness": None,
+        #     "Patience": None,
+        #     "Laziness": None,
+        #     "Rudeness": None,
+        #     "Gaslighting": None,
+        #     "Greediness": None
+        # }
 
         # Button
         btn_save = tk.Button(self, text="Send and Save Changes", font=("Consolas", 14, "bold"),
@@ -112,6 +129,29 @@ class PetConfig(tk.Frame):
         self.ent_faves["Food"]["combobox"].set(mapping.food_map[self.pet.favourites.food])
         self.ent_faves["Drink"]["combobox"].set(mapping.drink_map[self.pet.favourites.drink])
 
+        # Attributes
+        # self.frm_attributes = tk.Frame(self, bg=config.COLOUR_ACTIVE, padx=20, pady=20)
+        # self.frm_attributes.pack(fill="x", expand=True, pady=(0, 20), padx=20)
+        # tk.Label(self.frm_attributes, text="Personality Attribute Levels", bg=config.COLOUR_ACTIVE, font=("Consolas", 14, "bold")).pack(anchor="w", pady=(0, 10))
+        # for lbl in self.ent_attributes:
+        #     row = tk.Frame(self.frm_attributes, bg=config.COLOUR_ACTIVE)
+        #     row.pack(fill="x", pady=5)
+        #     tk.Label(row, text=lbl, bg=config.COLOUR_ACTIVE, font=("Consolas", 12)).pack(side="top", anchor="w", pady=5)
+        #     self.ent_attributes[lbl] = tk.Scale(row, from_=0, to=5, orient="horizontal",
+        #                                        resolution=1, length=400, tickinterval=1,
+        #                                        troughcolor="white", bg=config.COLOUR_INACTIVE,
+        #                                        highlightthickness=0)
+        #     self.ent_attributes[lbl].pack(side="top", anchor="w", fill="x", expand=True)
+
+        # self.ent_attributes["Charisma"].set(self.pet.attributes.charisma)
+        # self.ent_attributes["Confidence"].set(self.pet.attributes.confidence)
+        # self.ent_attributes["Kindness"].set(self.pet.attributes.kindness)
+        # self.ent_attributes["Patience"].set(self.pet.attributes.patience)
+        # self.ent_attributes["Laziness"].set(self.pet.attributes.lazy)
+        # self.ent_attributes["Rudeness"].set(self.pet.attributes.rude)
+        # self.ent_attributes["Gaslighting"].set(self.pet.attributes.gaslight)
+        # self.ent_attributes["Greediness"].set(self.pet.attributes.greedy)
+
     
     def save_changes(self):
         name = self.pet_name.get()
@@ -124,11 +164,21 @@ class PetConfig(tk.Frame):
         fav_weather = self.ent_faves["Weather"]["combobox"].get()
         fav_food = self.ent_faves["Food"]["combobox"].get()
         fav_drink = self.ent_faves["Drink"]["combobox"].get()
+        # attr_charisma = self.ent_attributes["Charisma"].get()
+        # attr_confidence = self.ent_attributes["Confidence"].get()
+        # attr_kindness = self.ent_attributes["Kindness"].get()
+        # attr_patience = self.ent_attributes["Patience"].get()
+        # attr_lazy = self.ent_attributes["Laziness"].get()
+        # attr_rude = self.ent_attributes["Rudeness"].get()
+        # attr_gaslight = self.ent_attributes["Gaslighting"].get()
+        # attr_greedy = self.ent_attributes["Greediness"].get()
 
         self.pet.update_config(name, sprite, energy_threshold, health_threshold, interaction_threshold,
                                fav_scene, fav_time, fav_weather, fav_food, fav_drink)
         
-        self.container.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite]}_neutral.png").resize((150, 150)))
+        self.container.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite]}_{mapping.expr_map[self.pet.expression]}.png").resize((150, 150)))
         self.container.cvs_bg.create_image(500, 15, image=self.container.img_banner, anchor="ne")
+
+        self.pet.ble_send_personality()
         
         self.pet.save_config()

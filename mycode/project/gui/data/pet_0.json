@@ -2,6 +2,7 @@
     "id": 0,
     "name": "Matt",
     "sprite": 0,
+    "expression": 0,
     "energy_threshold": 500,
     "health_threshold": 500,
     "interation_threshold": 500,
@@ -19,6 +20,17 @@
         "food": 1,
         "drink": 3
     },
+    "attributes": {
+        "charisma": 1,
+        "confidence": 1,
+        "kindness": 1,
+        "patience": 1,
+        "lazy": 1,
+        "rude": 1,
+        "gaslight": 1,
+        "greedy": 1
+    },
     "friends": [],
+    "enemies": [],
     "journal": []
 }

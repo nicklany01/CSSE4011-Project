@@ -6,6 +6,7 @@ import mapping
 import config
 
 import screens.pet_config
+import screens.pet_interact
 import screens.pet_journal
 import screens.pet_status
 
@@ -83,9 +84,9 @@ class PetPage(tk.Frame):
         self.cvs_bg.pack(fill="both", expand=True)
 
         self.bg_image = ImageTk.PhotoImage(file="assets/home.png")
-        self.cvs_bg.create_image(0, 0, image=self.bg_image, anchor="nw")
+        self.cvs_bg.create_image(0, 0, image=self.bg_image, anchor="center")
 
-        self.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite].lower()}_neutral.png").resize((150, 150)))
+        self.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite].lower()}_{mapping.expr_map[self.pet.expression]}.png").resize((150, 150)))
         self.cvs_bg.create_image(500, 15, image=self.img_banner, anchor="ne")
 
         # Screen
@@ -125,6 +126,7 @@ class PetPage(tk.Frame):
             widget.destroy()
 
     def show_home(self):
+        self.pet.save_config()
         self.root.selected_pet = None
         self.root.current_frame_num.set(config.FRAME_HOME)
 
@@ -132,21 +134,16 @@ class PetPage(tk.Frame):
         screens.pet_config.PetConfig(self.frm_screen, self, self.pet).pack(fill="x", expand=True)
 
     def show_interact(self):
-        tk.Label(self.frm_screen, text=f"Interactions", font=("Consolas", 20), bg="white").pack(pady=20)
+        screens.pet_interact.PetInteract(self.frm_screen, self.pet).pack(fill="x", expand=True)
 
     def show_status(self):
         screens.pet_status.PetStatus(self.frm_screen, self.pet).pack(fill="x", expand=True)
-        # tk.Label(self.frm_screen, text=f"{self.pet.name}'s Status", font=("Arial", 20), bg="white").pack(pady=20)
-        # mood = self.pet.mood
-        # stats = {
-        #     "Affection": mood.affection,
-        #     "Happiness": mood.happiness,
-        #     "Energy": mood.energy,
-        #     "Health": mood.health,
-        #     "Interaction": mood.interaction,
-        # }
-        # for k, v in stats.items():
-        #     tk.Label(self.frm_screen, text=f"{k}: {v}", font=("Arial", 14), bg="white").pack(pady=5)
 
     def show_journal(self):
         screens.pet_journal.PetJournal(self.frm_screen, self.pet).pack(fill="x", expand=True)
+
+    def update_expression(self):
+        self.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite]}_{mapping.expr_map[self.pet.expression]}.png").resize((150, 150)))
+        self.cvs_bg.create_image(500, 15, image=self.img_banner, anchor="ne")
+
+        self.after(1000, self.update_expression)

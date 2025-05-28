@@ -6,7 +6,7 @@ from datetime import datetime
 
 from bleak import BleakScanner, BleakClient
 
-from pet_app_helpers import PET_WFC_DEMO_CMDS, SPRITE, PET_PKT_ID, PET_BLE_ADV_POS, \
+from club.pet_app_helpers import PET_WFC_DEMO_CMDS, SPRITE, PET_PKT_ID, PET_BLE_ADV_POS, \
 	PetJournalEntry, PetJournal
 
 BLE_SIENNA_MF_ID = 0x6943
@@ -339,9 +339,15 @@ BLE_PKT_WFC_RTC_RX = PetWFCRtcPkt()
 async def find_ble_pet(pex_id):
 
 	print(f"Trying to find pet {pex_id}...")
+	sienna_devices = []
 
-	connect_dev = None
-	devices = await BleakScanner.discover(timeout=1, return_adv=True)
+	if pex_id == SIENNA_MASTER_PEX:
+		# we are in discover mode
+		timeout = 3
+	else:
+		timeout = 1
+
+	devices = await BleakScanner.discover(timeout=timeout, return_adv=True)
 
 	for device in devices:
 
@@ -360,12 +366,21 @@ async def find_ble_pet(pex_id):
 
 		print(f"Found pet device {adv_pex_id} {PET_BLE_ADV_POS.PEX_ID_HIGH}")
 
+		if pex_id == SIENNA_MASTER_PEX:
+			sienna_devices.append(adv_pex_id)
+
 		if adv_pex_id != pex_id:
 			continue
 
-		connect_dev = device
+		sienna_devices.append(device)
 
-	return connect_dev
+	if pex_id == SIENNA_MASTER_PEX:
+		return sienna_devices
+	
+	if len(sienna_devices) == 0:
+		return None
+	
+	return sienna_devices[0]
 
 async def pet_ble_retrieve_journal(client):
 
@@ -432,6 +447,67 @@ def pet_ble_wfc_notify_cb(characteristic, data):
 		BLE_PKT_WFC_RTC_RX.deserialize(data)
 		GAME_EVT_WFC_RX_RTC.set()
 
+async def pet_retrieve_rtc(client):
+
+	rtc_request_pkt = PetWFCDemoCmdPkt()
+	rtc_request_pkt.cmd_id = PET_WFC_DEMO_CMDS.GET_TIME
+
+	await client.write_gatt_char(BLE_UUID_CHR_WFC_TX, rtc_request_pkt.serialize(), response=False)
+	await GAME_EVT_WFC_RX_RTC.wait()
+
+	return BLE_PKT_WFC_RTC_RX.to_date()
+
+
+async def pet_retrieve_command(pex_id, command):
+
+	pet = await find_ble_pet(pex_id)
+
+	if pet is None:
+		return None
+
+	print("Found pet!")
+
+	async with BleakClient(pet) as client:
+
+		await client.start_notify(BLE_UUID_CHR_PPY_RX, pet_ble_ppy_notify_cb)
+		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
+		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
+
+		return await command(client)
+
+async def pet_send_packet(pex_id, packet, uuid):
+
+	while True:
+
+		pet = await find_ble_pet(pex_id)
+
+		if pet is None:
+			continue
+
+		break
+
+	print("Found pet!")
+
+	async with BleakClient(pet) as client:
+
+		await client.start_notify(BLE_UUID_CHR_PPY_RX, pet_ble_ppy_notify_cb)
+		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
+		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
+
+		await client.write_gatt_char(uuid, packet.serialize(), response=False)
+
+async def pet_ble_set_personality(pex_id, ppy_pkt):
+
+	await pet_send_packet(pex_id, ppy_pkt, BLE_UUID_CHR_PPY_TX)
+
+async def pet_ble_set_state(pex_id, state_pkt):
+
+	await pet_send_packet(pex_id, state_pkt, BLE_UUID_CHR_PEX_TX)
+
+async def pet_ble_discover_pets():
+
+	return await find_ble_pet(SIENNA_MASTER_PEX)
+
 async def main():
 
 	demo_pkt = PetWFCDemoCmdPkt()
@@ -439,49 +515,21 @@ async def main():
 	ppy_pkt = PetPPYPersonalityPkt()
 	ppy_pkt.randomize()
 
-	while True:
+	ppy_pkt.sprite = 0
 
-		pet = await find_ble_pet(0xBABE)
+	#pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
 
-		if pet is None:
-			continue
+	#for pet in pet_journal:
+	#	print(f"JOURNAL OF PET {hex(pet)}")
+	#	print(pet_journal[pet])
 
-		break
+	pets_in_area = await pet_ble_discover_pets()
+	print(pets_in_area)
+#
+	await pet_ble_set_personality(0xBABE, ppy_pkt)
 
-	async with BleakClient(pet) as client:
-
-		for service in client.services:
-			print(service)
-			for char in service.characteristics:
-				print("\t", char)
-
-		await client.start_notify(BLE_UUID_CHR_PPY_RX, pet_ble_ppy_notify_cb)
-		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
-		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
-
-		pet_journal = await pet_ble_retrieve_journal(client)
-		for pet in pet_journal:
-			print(f"JOURNAL OF PET {hex(pet)}")
-			print(pet_journal[pet])
-
-		# SEND PPY UPDATE
-		tx_bytes = ppy_pkt.serialize()
-		print(tx_bytes)
-		await client.write_gatt_char(BLE_UUID_CHR_PPY_TX, tx_bytes, response=False)
-
-		for i in range(0, 5):
-
-			if i == 3:
-				continue
-
-			demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_SCENE
-			demo_pkt.cmd_arg = i
-
-			tx_bytes = demo_pkt.serialize()
-			print(tx_bytes)
-
-			await client.write_gatt_char(BLE_UUID_CHR_WFC_TX, tx_bytes, response=False)
-			await asyncio.sleep(2)
+	time = await pet_retrieve_command(0xBABE, pet_retrieve_rtc)
+	print(time)
 
 if __name__ == "__main__":
 	asyncio.run(main())

@@ -34,7 +34,7 @@ class HomeScreen(tk.Frame):
         y_pos = 500
 
         for i, pet in enumerate(self.pets):
-            img = Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[pet.sprite].lower()}_neutral.png").resize((200, 200))
+            img = Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[pet.sprite].lower()}_{mapping.expr_map[pet.expression]}.png").resize((200, 200))
             sprite_img = ImageTk.PhotoImage(img)
             self.images.append(sprite_img)
 

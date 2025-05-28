@@ -57,6 +57,7 @@ class Sprite(Enum):
 	SPRITE_CHERRY = 1
 	SPRITE_ICE = 2
 
+
 class Scene(Enum):
 	MAIN_SCENE_MEADOW = 0
 	MAIN_SCENE_BEACH = 1
@@ -64,18 +65,24 @@ class Scene(Enum):
 	MAIN_SCENE_CITY = 3
 	MAIN_SCENE_SHOP = 4
 
+
 class Weather(Enum):
 	MOD_WEATHER_SUNNY = 0
 	MOD_WEATHER_RAINY = 1
 	MOD_WEATHER_CLOUDY = 2
 	MOD_WEATHER_SNOWY = 3
 
+
 class Expression(Enum):
-	MOD_EXP_NEUTRAL = 0
-	MOD_EXP_HAPPY = 1
-	MOD_EXP_SAD = 2
-	MOD_EXP_ANGRY = 3
-	MOD_EXP_SLEEPY = 4
+	ENLIGHTENED = 0
+	V_HAPPY = 1
+	HAPPY = 2
+	NEUTRAL = 3
+	SAD = 4
+	V_SAD = 5
+	ANGRY = 6
+	SLEEPY = 7
+
 
 class Time(Enum):
 	MOD_TIME_DAWN = 0
@@ -85,9 +92,29 @@ class Time(Enum):
 	MOD_TIME_DUSK = 4
 	MOD_TIME_NIGHT = 5
 
+
 class Temperature(Enum):
 	TEMP_FRIGID = 0
 	TEMP_COLD = 1
 	TEMP_NEUTRAL = 2
 	TEMP_WARM = 3
 	TEMP_BOILING = 4
+
+
+class Attributes(Enum):
+	# 'positive' attributes
+	PET_ATTR_CHARISMA = 0
+	PET_ATTR_CONFIDENCE = 1
+	PET_ATTR_KINDNESS = 2
+	PET_ATTR_PATIENCE = 3
+
+	PET_ATTR_POS_MAX = 4 # keep me before negatives
+
+	# 'negative' attributes
+	PET_ATTR_LAZY = 5
+	PET_ATTR_RUDE = 6
+	PET_ATTR_GASLIGHT = 7
+	PET_ATTR_GREEDY = 8
+
+	PET_ATTR_NEG_MAX = 9 # keep me last
+
