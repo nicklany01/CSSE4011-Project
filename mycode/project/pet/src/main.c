@@ -11,6 +11,8 @@
 #include <zephyr/drivers/display.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/hwinfo.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/shell/shell.h>
 
 #include "friends.h"
 #include "journal.h"
@@ -35,8 +37,9 @@
 
 #define UART_JOURNAL_TX_COOLDOWN 100
 
+LOG_MODULE_REGISTER(main);
+
 struct k_timer comms_state_timer;
-struct k_timer accel_poll_timer;
 
 struct k_event game_event_block;
 struct k_sem uart_srvc_lock;
@@ -402,9 +405,6 @@ static void thread_game_handler(void *a, void *b, void *c) {
 	// start our day :)
 	journal_add_entry(JOURNAL_EVT_WAKE, get_since_epoch());
 
-	k_timer_init(&accel_poll_timer, accel_poll_timeout, NULL);
-	k_timer_start(&accel_poll_timer, K_SECONDS(3), K_SECONDS(3));
-
 	while (true) {
 
 		game_events = k_event_wait(&game_event_block, GAME_EVTS_ALL, true, K_FOREVER);
@@ -438,29 +438,41 @@ static void thread_game_handler(void *a, void *b, void *c) {
 		}
 
 		if (game_events & GAME_EVT_ACCEL_SHAKE) {
-
-			mpu6886_read_accel(&accel);
-			magnitude = mpu6886_get_adjusted_accel_magnitude(&accel);
-
-			if (magnitude > SHAKE_MAGNITUDE_THRESH) {
-				shake_state.count += 1;
-			} else {
-				shake_state.count = 0;
-			}
-
-			if (shake_state.count > SHAKE_COUNT_THRESH) {
-				journal_add_entry(JOURNAL_EVT_SHAKE, get_since_epoch());
-			}
-
-
+			journal_add_entry(JOURNAL_EVT_SHAKE, get_since_epoch());
 		}
 	}
 }
 
+K_THREAD_STACK_DEFINE(stack_mood_handler, MOOD_THREAD_STACK_SIZE);
+struct k_thread thread_mood_handler_data;
+
+void mood_thread(void *arg1, void *arg2, void *arg3) {
+    mpu6886_accel_t accel;
+    float accel_mag;
+    while (1) {
+        if(k_mutex_lock(&mood_mutex, K_MSEC(50)) == 0) {
+            mood_step();
+            mpu6886_read_accel(&accel);
+            accel_mag = mpu6886_get_adjusted_accel_magnitude(&accel);
+            // LOG_INF("Accelerometer magnitude: %.2f", accel_mag);
+            if (accel_mag > 1) {
+                pet_mood.health -= 50;
+                pet_mood.health = CLAMP(pet_mood.health, 0, MAX_STATE_VALUE);
+                k_event_post(&game_event_block, GAME_EVT_ACCEL_SHAKE);
+            }
+            // mood_print(&pet_mood);
+            k_mutex_unlock(&mood_mutex);
+        }
+        // display_update_mood();
+        k_sleep(K_MSEC(100));
+    }
+}
+
+
 int main() {
 
 	const struct device *display_dev;
-	k_tid_t tid_uart_handler, tid_game_handler;
+	k_tid_t tid_uart_handler, tid_game_handler, tid_mood_handler;
 
 	display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 	if (!device_is_ready(display_dev)) {
@@ -517,6 +529,15 @@ int main() {
 		2, 0, K_NO_WAIT
 	);
 
+	tid_mood_handler = k_thread_create(
+		&thread_mood_handler_data,
+		stack_mood_handler,
+		K_THREAD_STACK_SIZEOF(stack_mood_handler),
+		mood_thread,
+		NULL, NULL, NULL,
+		MOOD_THREAD_PRIORITY, 0, K_NO_WAIT
+	);
+
 	scenes_init();
 	scenes_draw();
 
@@ -530,43 +551,6 @@ int main() {
 		k_sleep(K_MSEC(500));
 	}
 }
-/*
-=======
-#include <lvgl.h>
-#include <stdio.h>
-#include <string.h>
-#include "sound.h"
-#include "mood.h"
-#include <lvgl_input_device.h>
-#include <zephyr/shell/shell.h>
-#include "rtc.h"
-
-void main(void)
-{
-    const struct device *display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
-    
-    mood_init();
-    sound_init();
-    mpu6886_init();
-    display_init(display_dev);
-
-	while (1) {
-
-		if (k_msgq_num_used_get(&os_uart_rxq) > 0) {
-			k_msgq_get(&os_uart_rxq, &uart_passthru_rx, K_NO_WAIT);
-
-			process_ble_passthru_packet();
-		}
-
-		scenes_draw();
-
-		k_sleep(K_MSEC(100));
-
-	}
-}
-
-K_THREAD_DEFINE(mood_thread_id, MOOD_THREAD_STACK_SIZE, mood_thread, NULL, NULL, NULL, MOOD_THREAD_PRIORITY, 0, 0);
-<<<<<<< HEAD
 
 static int cmd_set_time(const struct shell *shell, size_t argc, char **argv)
 {
@@ -620,6 +604,3 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 );
 
 SHELL_CMD_REGISTER(rtc, &rtc_cmds, "RTC commands", NULL);
-=======
->>>>>>> Nick
-*/

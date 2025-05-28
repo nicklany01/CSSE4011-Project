@@ -9,6 +9,12 @@ scene_state_s scenes_state = {
 	.modifier_time = MOD_TIME_DUSK
 };
 
+int sprite_face_pos[SPRITE_MAX][2] = {
+
+	[SPRITE_ZERO] = {POSITION_X_CHAR_FACE, POSITION_Y_CHAR_FACE},
+	[SPRITE_ICE] = {POSITION_X_CHARACTER + 53, POSITION_Y_CHARACTER + 83}
+};
+
 scene_obj_meadow_s scene_meadow = {
 	.screen = NULL,
 };
