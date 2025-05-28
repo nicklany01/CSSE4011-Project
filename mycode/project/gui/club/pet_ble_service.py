@@ -475,8 +475,8 @@ async def pet_retrieve_command(pex_id, command):
 
 		return await command(client)
 
-async def pet_send_packet(pex_id, packet, uuid):
 
+async def pet_send_packet(pex_id, packet, uuid):
 	while True:
 
 		pet = await find_ble_pet(pex_id)
@@ -497,11 +497,9 @@ async def pet_send_packet(pex_id, packet, uuid):
 		await client.write_gatt_char(uuid, packet.serialize(), response=False)
 
 async def pet_ble_set_personality(pex_id, ppy_pkt):
-
 	await pet_send_packet(pex_id, ppy_pkt, BLE_UUID_CHR_PPY_TX)
 
 async def pet_ble_set_state(pex_id, state_pkt):
-
 	await pet_send_packet(pex_id, state_pkt, BLE_UUID_CHR_PEX_TX)
 
 async def pet_ble_discover_pets():

@@ -66,7 +66,7 @@ class PetConfig(tk.Frame):
 
         # Button
         btn_save = tk.Button(self, text="Send and Save Changes", font=("Consolas", 14, "bold"),
-                             bg="#70CB73", fg="white", activebackground="#94f599", relief="groove",
+                             bg=config.COLOUR_BTN_NORMAL, fg="white", activebackground=config.COLOUR_BTN_ACTIVE, relief="groove",
                              command=self.save_changes, pady=20)
         btn_save.pack(fill="x", padx=20, pady=20)
 
@@ -179,6 +179,5 @@ class PetConfig(tk.Frame):
         self.container.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite]}_{mapping.expr_map[self.pet.expression]}.png").resize((150, 150)))
         self.container.cvs_bg.create_image(500, 15, image=self.container.img_banner, anchor="ne")
 
-        self.pet.ble_send_personality()
-        
+        self.pet.send_personality()
         self.pet.save_config()

@@ -21,7 +21,7 @@ class PetStatus(tk.Frame):
         lbl_header.pack(ipady=20)
 
         # Expression
-        frm_expr = tk.Frame(self, bg="#75A5C9")
+        frm_expr = tk.Frame(self, bg=config.COLOUR_LBL_HIGHLIGHT)
         frm_expr.pack(padx=20, fill="x", expand=True)
         self.lbl_expr = tk.Label(frm_expr, text=f"Overall, {pet.name} is feeling '{mapping.feeling_map[pet.expression]}'", font=("Consolas", 16), bg="#75A5C9", fg="white")
         self.lbl_expr.pack(ipady=20)

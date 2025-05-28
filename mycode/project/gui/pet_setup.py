@@ -1,5 +1,6 @@
 import json
 import asyncio
+import threading
 
 import config
 import mapping
@@ -42,6 +43,18 @@ class PetFavourites():
 # 		self.gaslight = gaslight
 # 		self.greedy = greedy
 
+class PetScene():
+	def __init__(self, scene: int=Scene.MAIN_SCENE_MEADOW.value, weather: int=Weather.MOD_WEATHER_SUNNY.value, 
+			  time: int=Time.MOD_TIME_MORNING.value, food: int=Food.FOOD_NONE.value, 
+			  drink: int=Drink.DRINK_NONE.value):
+		self.scene = scene
+		self.weather = weather
+		self.time = time
+
+		self.food = food
+		self.drink = drink
+
+
 class Pet():
 	def __init__(self, file_path: str=""):
 		if file_path == "":
@@ -75,6 +88,10 @@ class Pet():
 			# 									  attributes["kindness"], attributes["patience"], attributes["lazy"],
 			# 									  attributes["rude"], attributes["gaslight"], attributes["greedy"])
 
+			scene = pet_config["scene"]
+			self.scene: PetScene = PetScene(scene["scene"], scene["weather"], scene["time"], 
+								   scene["food"], scene["drink"])
+
 			self.friends: list[int] = []
 			for friend in pet_config["friends"]:
 				self.friends.append(friend)
@@ -107,6 +124,7 @@ class Pet():
 		self.mood: PetMood = PetMood()
 		self.favourites: PetFavourites = PetFavourites()
 		# self.attributes: PetAttributes = PetAttributes()
+		self.scene: PetScene = PetScene()
 		self.friends: list[int] = []
 		self.enemies: list[int] = []
 		self.journal: club.pet_app_helpers.PetJournal = club.pet_app_helpers.PetJournal()
@@ -136,6 +154,24 @@ class Pet():
 		# self.attributes.gaslight = gaslight
 		# self.attributes.greedy = greedy
 
+	def update_scene(self, scene: str, weather: str, time: str):
+		self.scene.scene = mapping.scene_map.index(scene)
+		self.scene.time = mapping.time_map.index(time)
+		self.scene.weather = mapping.weather_map.index(weather)
+		self.scene.food = Food.FOOD_NONE.value
+		self.scene.drink = Drink.DRINK_NONE.value
+
+	
+	def update_food(self, food: str="Pizza"):
+		self.scene.food = mapping.food_map.index(food)
+		self.scene.drink = Drink.DRINK_NONE.value
+
+	
+	def update_drink(self, drink: str="Cola"):
+		self.scene.food = Food.FOOD_NONE.value
+		self.scene.drink = mapping.drink_map.index(drink)
+
+
 	def save_config(self):
 		pet_config = {}
 		pet_config["id"] = self.id
@@ -160,6 +196,13 @@ class Pet():
 		pet_config["favourites"]["weather"] = self.favourites.weather
 		pet_config["favourites"]["food"] = self.favourites.food
 		pet_config["favourites"]["drink"] = self.favourites.drink
+
+		pet_config["scene"] = {}
+		pet_config["scene"]["scene"] = self.scene.scene
+		pet_config["scene"]["time"] = self.scene.time
+		pet_config["scene"]["weather"] = self.scene.weather
+		pet_config["scene"]["food"] = self.scene.food
+		pet_config["scene"]["drink"] = self.scene.drink
 
 		# pet_config["attributes"] = {}
 		# pet_config["attributes"]["charisma"] = self.attributes.charisma
@@ -205,6 +248,7 @@ class Pet():
 					pet.journal = pet_journals[pet_id]
 					break
 	
+
 	async def ble_update_personality(self):
 		print(f"Getting personality for {hex(self.id)}")
 		personality = await ble.pet_retrieve_command(self.id, ble.pet_ble_retrieve_personality)
@@ -221,7 +265,7 @@ class Pet():
 		self.expression = personality.expression
 
 	
-	def ble_send_personality(self):
+	def send_personality(self):
 		ppy_pkt = ble.PetPPYPersonalityPkt()
 		ppy_pkt.randomize()
 
@@ -232,25 +276,36 @@ class Pet():
 		ppy_pkt.fav_temp = 0
 		ppy_pkt.fav_food = self.favourites.food
 		ppy_pkt.fav_drink = self.favourites.drink
-		
+
+		tx_thread = threading.Thread(target=self.tx_send_personality, args=(ppy_pkt,), daemon=True)
+		tx_thread.start()
+
+	def tx_send_personality(self, ppy_pkt):
 		asyncio.run(ble.pet_ble_set_personality(self.id, ppy_pkt))
 
 	
-	def ble_send_state(self):
+	def send_state(self):
 		state_pkt = ble.PetPEXStatePkt()
 
-		state_pkt.scene = 0
-		state_pkt.scene_weather = 0
+		state_pkt.scene = self.scene.scene
+		state_pkt.scene_weather = self.scene.weather
 		state_pkt.scene_mood = 0
-		state_pkt.scene_time = 0
+		state_pkt.scene_time = self.scene.time
 		state_pkt.scene_temp = 0
 
-		self.held_food = 0
-		self.held_drink = 0
-		
-		asyncio.run(ble.pet_ble_set_personality(self.id, state_pkt))
-		
+		self.held_food = self.scene.food
+		self.held_drink = self.scene.drink
 
-	def ble_send_relationships(self):
+		tx_thread = threading.Thread(target=self.tx_send_state, args=(state_pkt,), daemon=True)
+		tx_thread.start()
+
+	def tx_send_state(self, state_pkt):
+		asyncio.run(ble.pet_ble_set_state(self.id, state_pkt))
+
+
+	def send_relationships(self):
+		pass
+
+	def tx_send_relationships(self, pkt):
 		pass
 

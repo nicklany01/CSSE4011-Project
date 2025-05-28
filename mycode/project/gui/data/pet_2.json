@@ -20,8 +20,16 @@
         "food": 8,
         "drink": 4
     },
+    "scene": {
+        "scene": 1,
+        "time": 0,
+        "weather": 0,
+        "food": 0,
+        "drink": 0
+    },
     "friends": [
-        "0"
+        1,
+        0
     ],
     "enemies": [],
     "journal": [

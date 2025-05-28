@@ -39,12 +39,12 @@ class HomeScreen(tk.Frame):
             self.images.append(sprite_img)
 
            
-            frm_pet = tk.Frame(root, bg="#5C9FD3")
+            frm_pet = tk.Frame(root, bg=config.COLOUR_LBL_HIGHLIGHT)
             btn = tk.Button(frm_pet, image=sprite_img, command=lambda p=pet: self.select_pet(p), 
                             borderwidth=0, bg="white")
             btn.pack()
 
-            name_lbl = tk.Label(frm_pet, text=pet.name, font=("Consolas", 14, "bold"), bg="#5C9FD3", fg="white")
+            name_lbl = tk.Label(frm_pet, text=pet.name, font=("Consolas", 14, "bold"), bg=config.COLOUR_LBL_HIGHLIGHT, fg="white")
             name_lbl.pack(pady=(5, 10))
 
             self.cvs_bg.create_window(start_x + i * (spacing + 150), y_pos, window=frm_pet)

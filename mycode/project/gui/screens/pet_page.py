@@ -134,7 +134,13 @@ class PetPage(tk.Frame):
         screens.pet_config.PetConfig(self.frm_screen, self, self.pet).pack(fill="x", expand=True)
 
     def show_interact(self):
-        screens.pet_interact.PetInteract(self.frm_screen, self.pet).pack(fill="x", expand=True)
+        other_pets = []
+
+        for pet in self.root.pets:
+            if not pet == self.pet:
+                other_pets.append(pet)
+
+        screens.pet_interact.PetInteract(self.frm_screen, self.pet, other_pets).pack(fill="x", expand=True)
 
     def show_status(self):
         screens.pet_status.PetStatus(self.frm_screen, self.pet).pack(fill="x", expand=True)

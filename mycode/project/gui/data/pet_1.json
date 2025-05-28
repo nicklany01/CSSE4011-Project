@@ -20,17 +20,17 @@
         "food": 0,
         "drink": 0
     },
-    "attributes": {
-        "charisma": 1,
-        "confidence": 1,
-        "kindness": 1,
-        "patience": 1,
-        "lazy": 1,
-        "rude": 1,
-        "gaslight": 1,
-        "greedy": 1
+    "scene": {
+        "scene": 0,
+        "time": 3,
+        "weather": 2,
+        "food": 0,
+        "drink": 0
     },
     "friends": [],
-    "enemies": [],
+    "enemies": [
+        0,
+        2
+    ],
     "journal": []
 }
