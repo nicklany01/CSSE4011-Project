@@ -42,10 +42,12 @@
 typedef enum {
 
 	SPRITE_ZERO,
-	SPRITE_CHERRY,
 	SPRITE_ICE,
+	SPRITE_CHERRY,
 	SPRITE_GRAPE,
-	SPRITE_BAJA_BLAST
+	SPRITE_BAJA_BLAST,
+
+	SPRITE_MAX
 } sprite_s;
 
 typedef enum {
