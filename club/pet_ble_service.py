@@ -432,7 +432,7 @@ def pet_ble_wfc_notify_cb(characteristic, data):
 		BLE_PKT_WFC_RTC_RX.deserialize(data)
 		GAME_EVT_WFC_RX_RTC.set()
 
-async def pet_run_command(pex_id, command):
+async def pet_retrieve_command(pex_id, command):
 
 	while True:
 
@@ -453,6 +453,31 @@ async def pet_run_command(pex_id, command):
 
 		return await command(client)
 
+async def pet_send_packet(pex_id, packet, uuid):
+
+	while True:
+
+		pet = await find_ble_pet(pex_id)
+
+		if pet is None:
+			continue
+
+		break
+
+	print("Found pet!")
+
+	async with BleakClient(pet) as client:
+
+		await client.start_notify(BLE_UUID_CHR_PPY_RX, pet_ble_ppy_notify_cb)
+		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
+		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
+
+		await client.write_gatt_char(uuid, packet.serialize(), response=False)
+
+async def pet_ble_set_personality(pex_id, ppy_pkt):
+
+	await pet_send_packet(pex_id, ppy_pkt, BLE_UUID_CHR_PPY_TX)
+
 async def main():
 
 	demo_pkt = PetWFCDemoCmdPkt()
@@ -462,31 +487,13 @@ async def main():
 
 	ppy_pkt.sprite = 2
 
-	pet_journal = await pet_run_command(0xBABE, pet_ble_retrieve_journal)
+	pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
 
 	for pet in pet_journal:
 		print(f"JOURNAL OF PET {hex(pet)}")
 		print(pet_journal[pet])
 
-	return
-
-	# SEND PPY UPDATE
-	tx_bytes = ppy_pkt.serialize()
-	print(tx_bytes)
-	await client.write_gatt_char(BLE_UUID_CHR_PPY_TX, tx_bytes, response=False)
-
-	for i in range(0, 5):
-		if i == 3:
-			continue
-
-		demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_SCENE
-		demo_pkt.cmd_arg = i
-
-		tx_bytes = demo_pkt.serialize()
-		print(tx_bytes)
-
-		await client.write_gatt_char(BLE_UUID_CHR_WFC_TX, tx_bytes, response=False)
-		await asyncio.sleep(2)
+	await pet_ble_set_personality(0xBABE, ppy_pkt)
 
 if __name__ == "__main__":
 	asyncio.run(main())
