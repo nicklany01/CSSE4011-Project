@@ -12,6 +12,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/shell/shell.h>
 
 #include "friends.h"
 #include "journal.h"
@@ -551,36 +552,6 @@ int main() {
 	}
 }
 
-// K_THREAD_DEFINE(mood_thread_id, MOOD_THREAD_STACK_SIZE, mood_thread, NULL, NULL, NULL, MOOD_THREAD_PRIORITY, 0, 0);
-/*
-=======
-#include <lvgl.h>
-#include <stdio.h>
-#include <string.h>
-#include "sound.h"
-#include "mood.h"
-#include <lvgl_input_device.h>
-#include <zephyr/shell/shell.h>
-#include "rtc.h"
-
-void main(void)
-{
-    const struct device *display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
-    
-    mood_init();
-    sound_init();
-    mpu6886_init();
-    display_init(display_dev);
-
-    while (1) {
-        lv_timer_handler();
-        k_sleep(K_MSEC(10));
-    }
-}
-
-K_THREAD_DEFINE(mood_thread_id, MOOD_THREAD_STACK_SIZE, mood_thread, NULL, NULL, NULL, MOOD_THREAD_PRIORITY, 0, 0);
-<<<<<<< HEAD
-
 static int cmd_set_time(const struct shell *shell, size_t argc, char **argv)
 {
     if (argc != 7) {
@@ -633,6 +604,3 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 );
 
 SHELL_CMD_REGISTER(rtc, &rtc_cmds, "RTC commands", NULL);
-=======
->>>>>>> Nick
-*/
