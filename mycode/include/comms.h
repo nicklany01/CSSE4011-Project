@@ -26,7 +26,6 @@ typedef enum {
 	BLE_ADV_MY_SPRITE,
 } ble_adv_pkt_pos_e;
 
-
 typedef enum {
 
 	PET_PKT_PPY_PERSONALITY,
@@ -75,6 +74,7 @@ typedef struct {
 
 typedef struct {
 
+	pex_uuid_t id;
 	uint8_t index;
 	journal_entry_s entry;
 
@@ -91,6 +91,8 @@ typedef enum {
 
 	PET_WFC_CMD_REM_FRIEND,
 	PET_WFC_CMD_REM_ENEMY,
+
+	PET_WFC_CMD_GET_TIME
 } pet_wfc_demo_cmds_e;
 
 typedef struct {
@@ -137,8 +139,10 @@ bool deserialize_pet_exchange_state_pkt(pet_exchange_state_pkt_s *pkt, uint8_t *
 int serialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pkt, uint8_t *buffer);
 bool deserialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pkt, uint8_t *buffer);
 
-bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer);
+int serialize_pet_wfc_rtc_pkt(pet_wfc_rtc_pkt_s *pkt, uint8_t *buffer);
 bool deserialize_pet_wfc_rtc_pkt(pet_wfc_rtc_pkt_s *pkt, uint8_t *buffer);
+
+bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer);
 bool deserialize_pet_wfc_weather_pkt(pet_wfc_weather_pkt_s *pkt, uint8_t *buffer);
 
 int serialize_pet_uart_srvc_rssi_pkt(pet_uart_srvc_rssi_pkt_s *pkt, uint8_t *buffer);

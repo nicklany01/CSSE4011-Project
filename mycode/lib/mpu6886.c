@@ -1,4 +1,6 @@
+#include <math.h>
 #include "mpu6886.h"
+
 #include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(mpu6886, CONFIG_LOG_DEFAULT_LEVEL);

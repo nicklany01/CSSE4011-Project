@@ -114,6 +114,9 @@ int serialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pkt, 
 
 	buffer[0] = PET_PKT_PEX_JOURNAL_EVT;
 
+	e_u16(pkt->id, buffer + offset);
+	offset += sizeof(pkt->id);
+
 	buffer[offset++] = pkt->index;
 
 	e_u16(pkt->entry.timestamp, buffer + offset);
@@ -127,6 +130,9 @@ int serialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pkt, 
 bool deserialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pkt, uint8_t *buffer) {
 
 	int offset = 1;
+
+	pkt->id = d_u16(buffer + offset);
+	offset += sizeof(pkt->id);
 
 	pkt->index = buffer[offset++];
 
@@ -146,6 +152,22 @@ bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buff
 	pkt->cmd_arg = d_u16(buffer + 2);
 
 	return true;
+}
+
+int serialize_pet_wfc_rtc_pkt(pet_wfc_rtc_pkt_s *pkt, uint8_t *buffer) {
+	int offset = 1;
+
+	buffer[0] = PET_PKT_WFC_RTC_UPDATE;
+
+	buffer[offset++] = pkt->secs;
+	buffer[offset++] = pkt->mins;
+	buffer[offset++] = pkt->hrs;
+
+	buffer[offset++] = pkt->day;
+	buffer[offset++] = pkt->month;
+	buffer[offset++] = pkt->year;
+
+	return offset;
 }
 
 bool deserialize_pet_wfc_rtc_pkt(pet_wfc_rtc_pkt_s *pkt, uint8_t *buffer) {
