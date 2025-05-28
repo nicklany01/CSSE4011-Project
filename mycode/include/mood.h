@@ -6,6 +6,7 @@
 #define MOOD_THREAD_STACK_SIZE 1024
 #define MOOD_THREAD_PRIORITY 7
 
+
 #define CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
 
 // These could be dependent on the pet attributes, but for now they are fixed

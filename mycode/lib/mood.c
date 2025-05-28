@@ -6,6 +6,7 @@
 
 LOG_MODULE_REGISTER(mood);
 
+
 // Global mood state
 struct mood_state pet_mood = {
     .affection = 500,
@@ -105,26 +106,5 @@ void mood_step() {
     }
     if (pet_mood.affection == 1000 && pet_mood.happiness == 1000) { // can add other special conditions so this is more rare. Maybe only rare variants of the pet can reach this?
         pet_mood.expression = EXPRESSION_ENLIGHTENED; // special case for max happiness and affection
-    }
-}
-
-void mood_thread(void *arg1, void *arg2, void *arg3) {
-    mpu6886_accel_t accel;
-    float accel_mag;
-    while (1) {
-        if(k_mutex_lock(&mood_mutex, K_MSEC(50)) == 0) {
-            mood_step();
-            mpu6886_read_accel(&accel);
-            accel_mag = mpu6886_get_adjusted_accel_magnitude(&accel);
-            // LOG_INF("Accelerometer magnitude: %.2f", accel_mag);
-            if (accel_mag > 1) {
-                pet_mood.health -= 50;
-                pet_mood.health = CLAMP(pet_mood.health, 0, MAX_STATE_VALUE);
-            }
-            // mood_print(&pet_mood);
-            k_mutex_unlock(&mood_mutex);
-        }
-        display_update_mood();
-        k_sleep(K_MSEC(100));
     }
 }
