@@ -16,7 +16,8 @@ scene_state_s scenes_state = {
 int sprite_face_pos[SPRITE_MAX][2] = {
 
 	[SPRITE_ZERO] = {POSITION_X_CHAR_FACE, POSITION_Y_CHAR_FACE},
-	[SPRITE_ICE] = {POSITION_X_CHARACTER + 53, POSITION_Y_CHARACTER + 83}
+	[SPRITE_ICE] = {POSITION_X_CHARACTER + 53, POSITION_Y_CHARACTER + 83},
+	[SPRITE_CHERRY] = {POSITION_X_CHARACTER + 47, POSITION_Y_CHARACTER + 86}
 };
 
 const lv_image_dsc_t* sprite_0_mood_lookup[MOD_MOOD_MAX] = {
@@ -32,13 +33,22 @@ const lv_image_dsc_t* sprite_1_mood_lookup[MOD_MOOD_MAX] = {
 	[MOD_MOOD_HAPPY] = &face_1_happy,
 	[MOD_MOOD_SAD] = &face_1_sad,
 	[MOD_MOOD_ANGRY] = &face_1_angry,
-	[MOD_MOOD_SLEEPY] = NULL
+	[MOD_MOOD_SLEEPY] = &face_1_sleepy,
+};
+
+const lv_image_dsc_t* sprite_2_mood_lookup[MOD_MOOD_MAX] = {
+	[MOD_MOOD_NEUTRAL] = &face_2_neutral,
+	[MOD_MOOD_HAPPY] = &face_2_happy,
+	[MOD_MOOD_SAD] = NULL, //&face_2_sad,
+	[MOD_MOOD_ANGRY] = &face_2_angry,
+	[MOD_MOOD_SLEEPY] = &face_2_sleepy,
 };
 
 const lv_image_dsc_t *sprite_base_lookup[SPRITE_MAX] = {
 
 	[SPRITE_ZERO] = &sprite_base,
-	[SPRITE_ICE] = &sprite_ice
+	[SPRITE_ICE] = &sprite_ice,
+	[SPRITE_CHERRY] = &sprite_cherry
 };
 
 scene_obj_meadow_s scene_meadow = {
@@ -132,10 +142,13 @@ void scenes_character_update() {
 
 	switch (scenes_state.current_sprite) {
 		case SPRITE_ZERO:
-			target_face = sprite_0_mood_lookup[scenes_state.current_sprite];
+			target_face = sprite_0_mood_lookup[scenes_state.modifier_mood];
 			break;
 		case SPRITE_ICE:
-			target_face = sprite_1_mood_lookup[scenes_state.current_sprite];
+			target_face = sprite_1_mood_lookup[scenes_state.modifier_mood];
+			break;
+		case SPRITE_CHERRY:
+			target_face = sprite_2_mood_lookup[scenes_state.modifier_mood];
 			break;
 		default:
 			break;

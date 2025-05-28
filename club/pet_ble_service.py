@@ -432,6 +432,27 @@ def pet_ble_wfc_notify_cb(characteristic, data):
 		BLE_PKT_WFC_RTC_RX.deserialize(data)
 		GAME_EVT_WFC_RX_RTC.set()
 
+async def pet_run_command(pex_id, command):
+
+	while True:
+
+		pet = await find_ble_pet(pex_id)
+
+		if pet is None:
+			continue
+
+		break
+
+	print("Found pet!")
+
+	async with BleakClient(pet) as client:
+
+		await client.start_notify(BLE_UUID_CHR_PPY_RX, pet_ble_ppy_notify_cb)
+		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
+		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
+
+		return await command(client)
+
 async def main():
 
 	demo_pkt = PetWFCDemoCmdPkt()
@@ -439,51 +460,33 @@ async def main():
 	ppy_pkt = PetPPYPersonalityPkt()
 	ppy_pkt.randomize()
 
-	ppy_pkt.sprite = 1
+	ppy_pkt.sprite = 2
 
-	while True:
+	pet_journal = await pet_run_command(0xBABE, pet_ble_retrieve_journal)
 
-		pet = await find_ble_pet(0xBABE)
+	for pet in pet_journal:
+		print(f"JOURNAL OF PET {hex(pet)}")
+		print(pet_journal[pet])
 
-		if pet is None:
+	return
+
+	# SEND PPY UPDATE
+	tx_bytes = ppy_pkt.serialize()
+	print(tx_bytes)
+	await client.write_gatt_char(BLE_UUID_CHR_PPY_TX, tx_bytes, response=False)
+
+	for i in range(0, 5):
+		if i == 3:
 			continue
 
-		break
+		demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_SCENE
+		demo_pkt.cmd_arg = i
 
-	async with BleakClient(pet) as client:
-
-		for service in client.services:
-			print(service)
-			for char in service.characteristics:
-				print("\t", char)
-
-		await client.start_notify(BLE_UUID_CHR_PPY_RX, pet_ble_ppy_notify_cb)
-		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
-		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
-
-		pet_journal = await pet_ble_retrieve_journal(client)
-		for pet in pet_journal:
-			print(f"JOURNAL OF PET {hex(pet)}")
-			print(pet_journal[pet])
-
-		# SEND PPY UPDATE
-		tx_bytes = ppy_pkt.serialize()
+		tx_bytes = demo_pkt.serialize()
 		print(tx_bytes)
-		await client.write_gatt_char(BLE_UUID_CHR_PPY_TX, tx_bytes, response=False)
 
-		for i in range(0, 5):
-
-			if i == 3:
-				continue
-
-			demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_SCENE
-			demo_pkt.cmd_arg = i
-
-			tx_bytes = demo_pkt.serialize()
-			print(tx_bytes)
-
-			await client.write_gatt_char(BLE_UUID_CHR_WFC_TX, tx_bytes, response=False)
-			await asyncio.sleep(2)
+		await client.write_gatt_char(BLE_UUID_CHR_WFC_TX, tx_bytes, response=False)
+		await asyncio.sleep(2)
 
 if __name__ == "__main__":
 	asyncio.run(main())
