@@ -52,6 +52,7 @@ static struct bt_gatt_discover_params discover_params;
 static struct bt_gatt_subscribe_params subscribe_params;
 
 int8_t last_rssi = 0;
+static uint16_t pex_tx_handle;
 
 os_ble_state_s os_ble_state = {
 
@@ -175,6 +176,14 @@ static ssize_t os_ble_ppy_tx_cb(struct bt_conn *conn, const struct bt_gatt_attr 
 
 	k_msgq_put(&os_ble_rxq, &passthru_rx, K_NO_WAIT);
 }
+static void os_ble_write_resp(struct bt_conn *conn, uint8_t err, struct bt_gatt_write_params *params)
+{
+	if (err) {
+		printk("Write failed (err %d)\n", err);
+
+		return;
+	}
+}
 
 BT_GATT_SERVICE_DEFINE(srv_ppy,
 	BT_GATT_PRIMARY_SERVICE(&ble_uuid_srv_ppy.uuid),
@@ -222,6 +231,28 @@ void os_ble_notify(os_ble_passthru_s *passthru) {
 	}
 }
 
+void os_ble_write(os_ble_passthru_s *passthru) {
+
+	struct bt_gatt_write_params write_params;
+	int err;
+
+	write_params.func = os_ble_write_resp;
+	write_params.handle = pex_tx_handle;
+	write_params.offset = 0;
+	write_params.data = passthru->buff;
+	write_params.length = passthru->len;
+
+	switch (passthru->charac) {
+		case BLE_UUID_16_CHR_PEX_TX:
+			err = bt_gatt_write(pet_wfc_conn, &write_params);
+			break;
+		case BLE_UUID_16_CHR_PPY_TX:
+		case BLE_UUID_16_CHR_WFC_TX:
+		default:
+			break;
+	}
+}
+
 static uint8_t os_ble_notified(struct bt_conn *conn,
 	struct bt_gatt_subscribe_params *params, const void *buff, uint16_t len) {
 
@@ -248,6 +279,9 @@ static uint8_t os_ble_discover(struct bt_conn *conn,
 		const struct bt_gatt_attr *attr,
 			struct bt_gatt_discover_params *params) {
 
+
+	struct bt_gatt_chrc *chrc;
+
 	int err;
 
 	if (!attr) {
@@ -260,17 +294,7 @@ static uint8_t os_ble_discover(struct bt_conn *conn,
 
 	printk("[ATTRIBUTE] handle %u\n", attr->handle);
 
-	if (!bt_uuid_cmp(discover_params.uuid, &ble_uuid_srv_ppy.uuid)) {
-		discover_params.uuid = &ble_uuid_chr_ppy_rx.uuid;
-		discover_params.start_handle = attr->handle + 1;
-		discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
-
-		err = bt_gatt_discover(conn, &discover_params);
-		if (err) {
-			printk("Discover failed (err %d)\n", err);
-		}
-
-	} else if (!bt_uuid_cmp(discover_params.uuid, &ble_uuid_srv_pex.uuid)) {
+	if (!bt_uuid_cmp(discover_params.uuid, &ble_uuid_srv_pex.uuid)) {
 		discover_params.uuid = &ble_uuid_chr_pex_rx.uuid;
 		discover_params.start_handle = attr->handle + 1;
 		discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
@@ -279,16 +303,7 @@ static uint8_t os_ble_discover(struct bt_conn *conn,
 		if (err) {
 			printk("Discover failed (err %d)\n", err);
 		}
-	} else if (!bt_uuid_cmp(discover_params.uuid, &ble_uuid_srv_wfc.uuid)) {
-		discover_params.uuid = &ble_uuid_chr_wfc_rx.uuid;
-		discover_params.start_handle = attr->handle + 1;
-		discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
-
-		err = bt_gatt_discover(conn, &discover_params);
-		if (err) {
-			printk("Discover failed (err %d)\n", err);
-		}
-	}  else if (!bt_uuid_cmp(discover_params.uuid, &ble_uuid_chr_ppy_rx.uuid) ||
+	} else if (!bt_uuid_cmp(discover_params.uuid, &ble_uuid_chr_ppy_rx.uuid) ||
 			!bt_uuid_cmp(discover_params.uuid, &ble_uuid_chr_pex_rx.uuid) ||
 				!bt_uuid_cmp(discover_params.uuid, &ble_uuid_chr_wfc_rx.uuid)) {
 
@@ -315,8 +330,24 @@ static uint8_t os_ble_discover(struct bt_conn *conn,
 			printk("[SUBSCRIBED]\n");
 		}
 
+		discover_params.uuid = &ble_uuid_chr_pex_tx.uuid;
+		discover_params.start_handle = attr->handle + 1;
+		discover_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
 
-		return BT_GATT_ITER_STOP;
+		err = bt_gatt_discover(conn, &discover_params);
+		if (err) {
+			printk("Discover failed (err %d)\n", err);
+		}
+
+	} else if (!bt_uuid_cmp(discover_params.uuid, &ble_uuid_chr_pex_tx.uuid)) {
+
+		printf("Found TX.\n\r");
+
+		chrc = (struct bt_gatt_chrc *)attr->user_data;
+		pex_tx_handle = chrc->value_handle;
+
+		os_ble_state.state = OS_BLE_STATE_PET_WFC;
+		pet_wfc_state = PET_WFC_SEND_HELLO;
 	}
 
 	return BT_GATT_ITER_STOP;
@@ -326,8 +357,6 @@ static void os_ble_connected(struct bt_conn *connected, uint8_t err) {
 
 	if (os_ble_state.state == OS_BLE_STATE_TARGETING) {
 		// we actually are a central now
-		os_ble_state.state = OS_BLE_STATE_PET_WFC;
-		pet_wfc_state = PET_WFC_SEND_HELLO;
 
 		discover_params.uuid = &ble_uuid_srv_pex.uuid;
 		discover_params.func = os_ble_discover;
@@ -348,8 +377,13 @@ static void os_ble_connected(struct bt_conn *connected, uint8_t err) {
 
 static void os_ble_disconnected(struct bt_conn *disconn, uint8_t reason) {
 
+	printf("Disconnected.\r\n");
 	os_ble_state.state = OS_BLE_STATE_ADVERTISE;
+	pet_wfc_state = PET_WFC_NULL;
 	targeting = 0;
+
+	bt_conn_unref(pet_wfc_conn);
+	pet_wfc_conn = NULL;
 }
 
 BT_CONN_CB_DEFINE(conn_callbacks) = {

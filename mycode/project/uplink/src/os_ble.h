@@ -65,7 +65,7 @@ extern struct bt_conn *pet_wfc_conn;
 
 bool os_ble_init();
 void os_ble_update_mf_data(uint8_t *new_mf_data);
-
+void os_ble_write(os_ble_passthru_s *passthru);
 void os_ble_start_scan();
 void os_ble_stop_scan();
 void os_ble_notify(os_ble_passthru_s *passthru);

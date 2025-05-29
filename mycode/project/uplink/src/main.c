@@ -226,7 +226,7 @@ static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
 						ble_tx.charac = BLE_UUID_16_CHR_PEX_RX;
 						ble_tx.len = serialize_pet_wfc_demo_cmd_pkt(&pet_wfc_demo_pkt, ble_tx.buff);
 
-						os_ble_notify(&ble_tx);
+						os_ble_write(&ble_tx);
 						pet_wfc_state = PET_WFC_WAIT_HELLO;
 						break;
 
