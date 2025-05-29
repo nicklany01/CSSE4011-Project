@@ -1,0 +1,15 @@
+/ {
+
+	aliases {
+		u1 = &usart2;
+	};
+
+	bt_hci_silabs: bt_hci_silabs {
+		compatible = "silabs,bt-hci-efr32";
+		status = "okay";
+	};
+
+
+};
+
+

@@ -12,6 +12,9 @@ from pet_app_helpers import PET_WFC_DEMO_CMDS, SPRITE, PET_PKT_ID, PET_BLE_ADV_P
 BLE_SIENNA_MF_ID = 0x6943
 SIENNA_MASTER_PEX = 0x4369
 
+MF_ID_HIGH = 0x69
+MF_ID_LOW = 0x43
+
 JOURNAL_FINISHED_MAGIC_NUM = 96
 JOURNAL_REQUEST_MAGIC_NUM = 127
 
@@ -34,6 +37,14 @@ GAME_EVT_PEX_RX_JOURNAL = None
 GAME_EVT_WFC_RX_RTC = None
 
 GAME_RX_JOURNAL = {}
+
+class PetBLEAdvDataPos:
+	MF_ID_HIGH = 0
+	MF_ID_LOW = 1
+
+	PEX_ID_HIGH = 2
+	PEX_ID_LOW = 3
+	MY_SPRITE = 4
 
 async def pet_ble_init():
 	global GAME_EVT_PPY_RX_PERSONALITY, GAME_EVT_PEX_RX_STATE, \
@@ -67,10 +78,14 @@ class PetWFCDemoCmdPkt:
 
 		return tx_bytes
 
+	def deserialize(self, rx_bytes):
+
+		self.cmd_id = rx_bytes[1]
+		self.cmd_arg = d_u16(rx_bytes, 2)
+
 	def __str__(self):
 		return f"cmd_id: {self.cmd_id} cmd_arg: {self.cmd_arg}"
 
-	# no deserialize needed, WFC is one way
 
 class PetWFCRtcPkt:
 	def __init__(self):
@@ -339,6 +354,28 @@ class PetPEXJournalEvtPkt:
 	def __str__(self):
 		return f"index: {self.index} timestamp: {self.entry.timestamp} event: {self.entry.event}"
 
+class PetUARTSrvcRssiPkt:
+	def __init__(self):
+
+		self.rssi = 0
+		self.pex_id = 0
+		self.sprite = 0
+
+		self.pex_state = PetPEXStatePkt()
+
+	def serialize(self):
+
+		tx_bytes = bytearray()
+		tx_bytes.append(PET_PKT_ID.UART_SRVC_RSSI)
+
+		tx_bytes.append(self.rssi)
+		e_u16(self.pex_id, tx_bytes)
+		tx_bytes.append(self.sprite)
+
+		tx_bytes.extend(self.pex_state.serialize())
+
+		return tx_bytes
+
 BLE_PKT_PPY_PERSONALITY_RX = PetPPYPersonalityPkt()
 
 BLE_PKT_PEX_STATE_RX = PetPEXStatePkt()
@@ -480,7 +517,7 @@ async def pet_retrieve_command(pex_id, command):
 
 	print("Found pet!")
 
-	async with BleakClient(pet) as client:
+	async with BleakClient(pet, timeout=20) as client:
 
 		await client.start_notify(BLE_UUID_CHR_PPY_RX, pet_ble_ppy_notify_cb)
 		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
@@ -501,13 +538,18 @@ async def pet_send_packet(pex_id, packet, uuid):
 
 	print("Found pet!")
 
-	async with BleakClient(pet) as client:
+	async with BleakClient(pet, timeout=20) as client:
 
 		await client.start_notify(BLE_UUID_CHR_PPY_RX, pet_ble_ppy_notify_cb)
 		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
 		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
 
 		await client.write_gatt_char(uuid, packet.serialize(), response=False)
+
+		close_conn = PetWFCDemoCmdPkt()
+		close_conn.cmd_id = PET_WFC_DEMO_CMDS.CLOSE_CONN
+
+		await client.write_gatt_char(BLE_UUID_CHR_WFC_TX, close_conn.serialize(), response=False)
 
 async def pet_ble_set_personality(pex_id, ppy_pkt):
 
@@ -527,11 +569,16 @@ async def main():
 
 	await pet_send_packet(0xBABE, demo_pkt, BLE_UUID_CHR_WFC_TX)
 
+	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_SCENE
+	demo_pkt.cmd_arg = 0
+
+	await pet_send_packet(0xBABE, demo_pkt, BLE_UUID_CHR_WFC_TX)
+
 	ppy_pkt = PetPPYPersonalityPkt()
 	ppy_pkt.randomize()
 
-	ppy_pkt.sprite = 2
-	#await pet_ble_set_personality(0xBABE, ppy_pkt)
+	ppy_pkt.sprite = 0
+	await pet_ble_set_personality(0xBABE, ppy_pkt)
 
 	pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
 
