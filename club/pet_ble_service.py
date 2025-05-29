@@ -531,7 +531,7 @@ async def main():
 	ppy_pkt.randomize()
 
 	ppy_pkt.sprite = 2
-	await pet_ble_set_personality(0xBABE, ppy_pkt)
+	#await pet_ble_set_personality(0xBABE, ppy_pkt)
 
 	pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
 
@@ -542,10 +542,10 @@ async def main():
 	pets_in_area = await pet_ble_discover_pets()
 	print(pets_in_area)
 #
-	await pet_ble_set_personality(0xBABE, ppy_pkt)
+	#await pet_ble_set_personality(0xBABE, ppy_pkt)
 
-	time = await pet_retrieve_command(0xBABE, pet_retrieve_rtc)
-	print(time)
+	#time = await pet_retrieve_command(0xBABE, pet_retrieve_rtc)
+	#print(time)
 
 if __name__ == "__main__":
 	asyncio.run(main())

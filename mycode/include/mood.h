@@ -3,8 +3,9 @@
 
 #include <zephyr/kernel.h>
 
-#define MOOD_THREAD_STACK_SIZE 1024
+#define MOOD_THREAD_STACK_SIZE 4096
 #define MOOD_THREAD_PRIORITY 7
+
 
 #define CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
 
