@@ -41,7 +41,8 @@
 #define SCREEN_SIZE_W 320
 #define SCREEN_SIZE_H 240
 
-typedef enum {
+typedef enum
+{
 
 	SPRITE_ZERO,
 	SPRITE_ICE,
@@ -52,7 +53,8 @@ typedef enum {
 	SPRITE_MAX
 } sprite_s;
 
-typedef enum {
+typedef enum
+{
 
 	MAIN_SCENE_MEADOW,
 	MAIN_SCENE_BEACH,
@@ -63,7 +65,8 @@ typedef enum {
 	MAIN_SCENE_MAX
 } main_scenes_e;
 
-typedef enum {
+typedef enum
+{
 
 	MOD_WEATHER_SUNNY,
 	MOD_WEATHER_RAINY,
@@ -73,7 +76,8 @@ typedef enum {
 	MOD_WEATHER_MAX
 } mod_weather_e;
 
-typedef enum {
+typedef enum
+{
 
 	MOD_MOOD_NEUTRAL,
 	MOD_MOOD_HAPPY,
@@ -85,7 +89,8 @@ typedef enum {
 	MOD_MOOD_MAX
 } mod_mood_e;
 
-typedef enum {
+typedef enum
+{
 
 	MOD_TIME_DAWN,
 	MOD_TIME_MORNING,
@@ -97,7 +102,8 @@ typedef enum {
 	MOD_TIME_MAX
 } mod_time_e;
 
-typedef enum {
+typedef enum
+{
 
 	TEMP_FRIGID,
 	TEMP_COLD,
@@ -108,7 +114,8 @@ typedef enum {
 	TEMP_MAX
 } mod_temp_e;
 
-typedef struct {
+typedef struct
+{
 
 	lv_obj_t *base;
 	lv_obj_t *face;
@@ -116,7 +123,8 @@ typedef struct {
 	lv_obj_t *sick;
 } character_container_s;
 
-typedef struct {
+typedef struct
+{
 
 	main_scenes_e main_scene;
 
@@ -137,7 +145,8 @@ typedef struct {
 
 } scene_state_s;
 
-typedef struct {
+typedef struct
+{
 
 	lv_obj_t *screen;
 	lv_obj_t *background;
@@ -146,7 +155,8 @@ typedef struct {
 
 } scene_obj_meadow_s;
 
-typedef struct {
+typedef struct
+{
 
 	lv_obj_t *screen;
 	lv_obj_t *background;
@@ -154,7 +164,8 @@ typedef struct {
 	character_container_s character;
 } scene_obj_beach_s;
 
-typedef struct {
+typedef struct
+{
 
 	lv_obj_t *screen;
 	lv_obj_t *background;
@@ -162,7 +173,8 @@ typedef struct {
 	character_container_s character;
 } scene_obj_forest_s;
 
-typedef struct {
+typedef struct
+{
 
 	lv_obj_t *screen;
 	lv_obj_t *background;
@@ -170,7 +182,8 @@ typedef struct {
 	character_container_s character;
 } scene_obj_city_s;
 
-typedef struct {
+typedef struct
+{
 
 	lv_obj_t *screen;
 	lv_obj_t *background;
@@ -191,4 +204,5 @@ void scenes_set_sprite(sprite_s sprite);
 
 void scenes_toggle_sick();
 void scenes_set_temp_from_int_c(int8_t c);
+void scenes_create_scene_switch_button(lv_obj_t *parent);
 #endif
