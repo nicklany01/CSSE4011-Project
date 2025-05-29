@@ -22,6 +22,7 @@ class PetConfig(tk.Frame):
 
         # Configurable values
         self.pet_name = tk.StringVar(value=pet.name)
+        self.pet_id = tk.StringVar(value=pet.id)
         self.ent_sprite = None
 
         self.ent_threshold = {
@@ -76,8 +77,9 @@ class PetConfig(tk.Frame):
         tk.Label(self.frm_personal, text="Personal Details", bg=config.COLOUR_ACTIVE, font=("Consolas", 14, "bold")).pack(anchor="w", pady=(0, 10))
 
         frm_id = tk.Frame(self.frm_personal, bg=config.COLOUR_ACTIVE)
-        tk.Label(frm_id, text="ID Number", bg=config.COLOUR_ACTIVE, font=("Consolas", 12), width=20, anchor="w").pack(side="left")
-        self.ent_name = tk.Label(frm_id, text=f"{pet.id}", bg=config.COLOUR_ACTIVE, font=("Consolas", 12)).pack(side="left")
+        valid_entry = root.register(self.validate_entry)
+        tk.Label(frm_id, text="ID", bg=config.COLOUR_ACTIVE, font=("Consolas", 12), width=20, anchor="w").pack(side="left")
+        self.ent_name = tk.Entry(frm_id, textvariable=self.pet_id, validate="key", validatecommand=(valid_entry, "%P"), font=("Consolas", 12)).pack(side="left", fill="x", expand=True)
         frm_id.pack(fill="x", pady=5)
         
         frm_name = tk.Frame(self.frm_personal, bg=config.COLOUR_ACTIVE)
@@ -152,9 +154,12 @@ class PetConfig(tk.Frame):
         # self.ent_attributes["Gaslighting"].set(self.pet.attributes.gaslight)
         # self.ent_attributes["Greediness"].set(self.pet.attributes.greedy)
 
+    def validate_entry(self, value: str):
+        return value.isdigit() or value == ""
     
     def save_changes(self):
         name = self.pet_name.get()
+        id = self.pet_id.get()
         sprite = self.ent_sprite.get()
         energy_threshold = self.ent_threshold["Energy Threshold"].get()
         health_threshold = self.ent_threshold["Health Threshold"].get()
@@ -173,7 +178,7 @@ class PetConfig(tk.Frame):
         # attr_gaslight = self.ent_attributes["Gaslighting"].get()
         # attr_greedy = self.ent_attributes["Greediness"].get()
 
-        self.pet.update_config(name, sprite, energy_threshold, health_threshold, interaction_threshold,
+        self.pet.update_config(name, id, sprite, energy_threshold, health_threshold, interaction_threshold,
                                fav_scene, fav_time, fav_weather, fav_food, fav_drink)
         
         self.container.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite]}_{mapping.expr_map[self.pet.expression]}.png").resize((150, 150)))

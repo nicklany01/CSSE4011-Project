@@ -27,11 +27,11 @@
         "food": 0,
         "drink": 0
     },
-    "friends": [],
-    "enemies": [
-        0,
-        1
+    "friends": [
+        1,
+        0
     ],
+    "enemies": [],
     "journal": [
         [
             0,

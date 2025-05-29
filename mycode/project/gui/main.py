@@ -19,14 +19,23 @@ def rx_ble_comms(pets: list[pet_setup.Pet]):
 
 if __name__ == '__main__':
 
-	# pets_in_area = asyncio.run(ble.pet_ble_discover_pets())
-	# print(pets_in_area)
+	pets_in_area = asyncio.run(ble.pet_ble_discover_pets())
+	print(f"Found these pets: {pets_in_area}")
 
-	pet0 = pet_setup.Pet("data/pet_0.json")
-	pet1 = pet_setup.Pet("data/pet_1.json")
-	pet2 = pet_setup.Pet("data/pet_2.json")
+	pet_ids = []
 
-	pets = [pet0, pet1, pet2]
+	for pet in pets_in_area:
+		if len(pet_ids) == 3:
+			break
+		pet_ids.append(pet)
+
+	num_default = 3 - len(pet_ids)
+	for i in range(0, num_default):
+		pet_ids.append(i)
+
+	pets = []
+	for pet_id in pet_ids:
+		pets.append(pet_setup.Pet(f"data/pet_{pet_id}.json"))
 	
 	gui_screen = window.GUIWindow(pets)
 	

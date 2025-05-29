@@ -129,11 +129,16 @@ class Pet():
 		self.enemies: list[int] = []
 		self.journal: club.pet_app_helpers.PetJournal = club.pet_app_helpers.PetJournal()
 
-	def update_config(self, name: str, sprite: str, energy_threshold: int, health_threshold: int,
+	def update_config(self, name: str, id: str, sprite: str, energy_threshold: int, health_threshold: int,
 				   interaction_threshold: int, fav_scene: str, fav_time: str, fav_weather: str,
 				   fav_food: str, fav_drink: str, charisma: int=0, confidence: int=0, kindness: int=0, 
 				   patience: int=0, lazy: int=0, rude: int=0, gaslight: int=0, greedy: int=0):
 		self.name = name
+
+		if id == "":
+			self.id = 0
+		else:
+			self.id = int(id)
 		self.sprite = mapping.sprite_type_map.index(sprite)
 		self.energy_threshold = energy_threshold
 		self.health_threshold = health_threshold
