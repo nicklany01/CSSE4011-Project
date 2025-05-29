@@ -563,7 +563,7 @@ int main() {
 		// main thread's only job is
 		// screen refresh 2Hz
 		scenes_draw();
-		k_sleep(K_MSEC(500));
+		k_sleep(K_MSEC(100));
 
 		// get rid of sick on next iter
 		if (scenes_state.is_sick) {
