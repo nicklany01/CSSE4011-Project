@@ -107,6 +107,8 @@ typedef struct {
 	int rendered;
 } shake_state_s;
 
+pex_uuid_t close_mate = 0x0000;
+
 #define ACCEL_POLL_PERIOD 500
 
 #define SHAKE_MAGNITUDE_THRESH 3
@@ -443,6 +445,11 @@ static void thread_game_handler(void *a, void *b, void *c) {
 				default:
 					break;
 			}
+
+			if (pet_uart_srvc_rssi_pkt.rssi > -60) {
+				scenes_allow_wfc();
+				close_mate = pet_uart_srvc_rssi_pkt.id;
+			}
 		}
 
 		if (game_events & GAME_EVT_RTC_UPDATED) {
@@ -578,7 +585,7 @@ int main() {
 		// main thread's only job is
 		// screen refresh 2Hz
 		scenes_draw();
-		k_sleep(K_MSEC(500));
+		k_sleep(K_MSEC(100));
 
 		if (shake_state.rendered > 0) {
 			shake_state.rendered += 1;
@@ -589,6 +596,19 @@ int main() {
 			scenes_toggle_sick();
 			shake_state.count = 0;
 			shake_state.rendered = 0;
+		}
+
+		if (scenes_state.do_wfc) {
+			pet_wfc_demo_pkt.cmd_id = PET_WFC_CMD_INIT_CONN;
+			pet_wfc_demo_pkt.cmd_arg = close_mate;
+
+
+			uart_passthru_tx.len = serialize_pet_wfc_demo_cmd_pkt(
+				&pet_wfc_demo_pkt,  uart_passthru_tx.buff);
+			os_uart_passthru(&uart_passthru_tx);
+
+			scenes_state.do_wfc = false;
+
 		}
 	}
 }

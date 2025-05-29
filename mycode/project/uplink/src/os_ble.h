@@ -1,3 +1,4 @@
+#include "friends.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -29,7 +30,9 @@ typedef enum {
 	OS_BLE_STATE_SCAN,
 	OS_BLE_STATE_ADVERTISE,
 	OS_BLE_STATE_CONNECTED,
-	OS_BLE_STATE_TARGETING
+	OS_BLE_STATE_TARGETING,
+	OS_BLE_STATE_WAITING,
+	OS_BLE_STATE_PET_WFC
 } os_ble_state_e;
 
 typedef struct {
@@ -45,6 +48,7 @@ typedef struct {
 
 	int8_t rssi;
 	uint8_t mf_data[MF_DLEN];
+	const bt_addr_le_t *addr;
 } os_ble_pet_adv_s;
 
 typedef struct {
@@ -55,6 +59,9 @@ typedef struct {
 extern os_ble_state_s os_ble_state;
 extern struct k_msgq os_ble_rxq;
 extern struct k_msgq os_ble_advq;
+
+extern pex_uuid_t targeting;
+extern struct bt_conn *pet_wfc_conn;
 
 bool os_ble_init();
 void os_ble_update_mf_data(uint8_t *new_mf_data);

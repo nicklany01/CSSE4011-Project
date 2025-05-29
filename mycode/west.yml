@@ -4,29 +4,33 @@
 # Only imports subprojects currently required to minimise cloning time.
 
 manifest:
-  defaults:
-    remote: upstream
+    defaults:
+        remote: upstream
 
-  remotes:
-    - name: upstream
-      url-base: https://github.com/zephyrproject-rtos
+    remotes:
+        - name: upstream
+          url-base: https://github.com/zephyrproject-rtos
 
-  projects:
-    - name: zephyr
-      repo-path: zephyr
-      revision: main
-      import:
-        name-whitelist:
-          - cmsis
-          - hal_nordic
-          - hal_stm32
-          - mbedtls
-          - mcuboot
-          - mcumgr
-          - segger
-          - tinycbor
-          - tinycrypt
+    projects:
+        - name: zephyr
+          repo-path: zephyr
+          revision: main
+          import:
+              name-whitelist:
+                  - cmsis
+                  - hal_nordic
+                  - hal_stm32
+                  - mbedtls
+                  - mcuboot
+                  - mcumgr
+                  - segger
+                  - tinycbor
+                  - tinycrypt
+        - name: hal_silabs
+          url: https://github.com/zephyrproject-rtos/hal_silabs
+          revision: main
+          import: true
 
-  self:
-    path: sXXXXXXXX
-    west-commands: scripts/west-commands.yml
+    self:
+        path: sXXXXXXXX
+        west-commands: scripts/west-commands.yml

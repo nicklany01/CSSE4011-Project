@@ -92,7 +92,11 @@ typedef enum {
 	PET_WFC_CMD_REM_FRIEND,
 	PET_WFC_CMD_REM_ENEMY,
 
-	PET_WFC_CMD_GET_TIME
+	PET_WFC_CMD_GET_TIME,
+	PET_WFC_CMD_CLOSE_CONN,
+	PET_WFC_CMD_INIT_CONN,
+
+	PET_WFC_CMD_HELLO
 } pet_wfc_demo_cmds_e;
 
 typedef struct {
@@ -142,7 +146,9 @@ bool deserialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pk
 int serialize_pet_wfc_rtc_pkt(pet_wfc_rtc_pkt_s *pkt, uint8_t *buffer);
 bool deserialize_pet_wfc_rtc_pkt(pet_wfc_rtc_pkt_s *pkt, uint8_t *buffer);
 
+int serialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer);
 bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer);
+
 bool deserialize_pet_wfc_weather_pkt(pet_wfc_weather_pkt_s *pkt, uint8_t *buffer);
 
 int serialize_pet_uart_srvc_rssi_pkt(pet_uart_srvc_rssi_pkt_s *pkt, uint8_t *buffer);
