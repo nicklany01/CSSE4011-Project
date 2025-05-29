@@ -1,189 +1,194 @@
-// #ifndef SCENES_H
-// #define SCENES_H
+#ifndef SCENES_H
+#define SCENES_H
 
-// #include "foods.h"
-// #include <stdint.h>
+#include <stdbool.h>
+#include <stdint.h>
 
-// #include <lvgl.h>
+#include <lvgl.h>
 
-// #define POSITION_X_CHARACTER 60
-// #define POSITION_Y_CHARACTER 0
+#include "foods.h"
 
-// #define POSITION_X_CHAR_FACE (POSITION_X_CHARACTER + 63)
-// #define POSITION_Y_CHAR_FACE 108
+#define POSITION_X_CHARACTER 60
+#define POSITION_Y_CHARACTER 0
 
-// #define POSITION_X_SUN 195
-// #define POSITION_Y_SUN 10
+#define POSITION_X_CHAR_FACE (POSITION_X_CHARACTER + 63)
+#define POSITION_Y_CHAR_FACE 108
 
-// #define POSITION_X_MEADOW_HILL_BASE 0
-// #define POSITION_Y_MEADOW_HILL_BASE 150
+#define POSITION_X_SUN 195
+#define POSITION_Y_SUN 10
 
-// #define POSITION_X_MEADOW_HILL_TOP 0
-// #define POSITION_Y_MEADOW_HILL_TOP 0
+#define POSITION_X_MEADOW_HILL_BASE 0
+#define POSITION_Y_MEADOW_HILL_BASE 150
 
-// #define POSITION_Y_FOREST_TREE 75
-// #define POSITION_Y_FOREST_TREE_BG 45
+#define POSITION_X_MEADOW_HILL_TOP 0
+#define POSITION_Y_MEADOW_HILL_TOP 0
 
-// #define SIZE_W_MEADOW_HILL_BASE 320
-// #define SIZE_H_MEADOW_HILL_BASE 90
+#define POSITION_Y_FOREST_TREE 75
+#define POSITION_Y_FOREST_TREE_BG 45
 
-// #define COLOUR_MEADOW_HILL_BASE 0x1eac00
-// #define COLOUR_FOREST_BACKGROUND 0x03250d
+#define SIZE_W_MEADOW_HILL_BASE 320
+#define SIZE_H_MEADOW_HILL_BASE 90
 
-// #define FOREST_NUM_TREES 5
-// #define FOREST_NUM_GRASS_ROWS 6
-// #define FOREST_NUM_GRASS_COLS 20
+#define COLOUR_MEADOW_HILL_BASE 0x1eac00
+#define COLOUR_FOREST_BACKGROUND 0x03250d
 
-// #define POSITION_Y_FOREST_GRASS POSITION_Y_FOREST_TREE_BG
+#define FOREST_NUM_TREES 5
+#define FOREST_NUM_GRASS_ROWS 6
+#define FOREST_NUM_GRASS_COLS 20
 
-// #define SCREEN_SIZE_W 320
-// #define SCREEN_SIZE_H 240
+#define POSITION_Y_FOREST_GRASS POSITION_Y_FOREST_TREE_BG
 
-// typedef enum {
+#define SCREEN_SIZE_W 320
+#define SCREEN_SIZE_H 240
 
-// 	SPRITE_ZERO,
-// 	SPRITE_ICE,
-// 	SPRITE_CHERRY,
-// 	SPRITE_GRAPE,
-// 	SPRITE_BAJA_BLAST,
+typedef enum {
 
-// 	SPRITE_MAX
-// } sprite_s;
+	SPRITE_ZERO,
+	SPRITE_ICE,
+	SPRITE_CHERRY,
+	SPRITE_GRAPE,
+	SPRITE_BAJA_BLAST,
 
-// typedef enum {
+	SPRITE_MAX
+} sprite_s;
 
-// 	MAIN_SCENE_MEADOW,
-// 	MAIN_SCENE_BEACH,
-// 	MAIN_SCENE_FOREST,
-// 	MAIN_SCENE_CITY,
-// 	MAIN_SCENE_SHOP,
+typedef enum {
 
-// 	MAIN_SCENE_MAX
-// } main_scenes_e;
+	MAIN_SCENE_MEADOW,
+	MAIN_SCENE_BEACH,
+	MAIN_SCENE_FOREST,
+	MAIN_SCENE_CITY,
+	MAIN_SCENE_SHOP,
 
-// typedef enum {
+	MAIN_SCENE_MAX
+} main_scenes_e;
 
-// 	MOD_WEATHER_SUNNY,
-// 	MOD_WEATHER_RAINY,
-// 	MOD_WEATHER_CLOUDY,
-// 	MOD_WEATHER_SNOWY,
+typedef enum {
 
-// 	MOD_WEATHER_MAX
-// } mod_weather_e;
+	MOD_WEATHER_SUNNY,
+	MOD_WEATHER_RAINY,
+	MOD_WEATHER_CLOUDY,
+	MOD_WEATHER_SNOWY,
 
-// typedef enum {
+	MOD_WEATHER_MAX
+} mod_weather_e;
 
-// 	MOD_MOOD_NEUTRAL,
-// 	MOD_MOOD_HAPPY,
-// 	MOD_MOOD_SAD,
-// 	MOD_MOOD_ANGRY,
-// 	MOD_MOOD_SLEEPY,
+typedef enum {
 
-// 	MOD_MOOD_MAX
-// } mod_mood_e;
+	MOD_MOOD_NEUTRAL,
+	MOD_MOOD_HAPPY,
+	MOD_MOOD_SAD,
+	MOD_MOOD_ANGRY,
+	MOD_MOOD_SLEEPY,
+	MOD_MOOD_SICK,
 
-// typedef enum {
+	MOD_MOOD_MAX
+} mod_mood_e;
 
-// 	MOD_TIME_DAWN,
-// 	MOD_TIME_MORNING,
-// 	MOD_TIME_MIDDAY,
-// 	MOD_TIME_AFTERNOON,
-// 	MOD_TIME_DUSK,
-// 	MOD_TIME_NIGHT,
+typedef enum {
 
-// 	MOD_TIME_MAX
-// } mod_time_e;
+	MOD_TIME_DAWN,
+	MOD_TIME_MORNING,
+	MOD_TIME_MIDDAY,
+	MOD_TIME_AFTERNOON,
+	MOD_TIME_DUSK,
+	MOD_TIME_NIGHT,
 
-// typedef enum {
+	MOD_TIME_MAX
+} mod_time_e;
 
-// 	TEMP_FRIGID,
-// 	TEMP_COLD,
-// 	TEMP_NEUTRAL,
-// 	TEMP_WARM,
-// 	TEMP_BOILING,
+typedef enum {
 
-// 	TEMP_MAX
-// } mod_temp_e;
+	TEMP_FRIGID,
+	TEMP_COLD,
+	TEMP_NEUTRAL,
+	TEMP_WARM,
+	TEMP_BOILING,
 
-// typedef struct {
+	TEMP_MAX
+} mod_temp_e;
 
-// 	main_scenes_e main_scene;
+typedef struct {
 
-// 	mod_weather_e modifier_weather;
-// 	mod_mood_e modifier_mood;
-// 	mod_time_e modifier_time;
+	lv_obj_t *base;
+	lv_obj_t *face;
+	lv_obj_t *anger;
+	lv_obj_t *sick;
+} character_container_s;
 
-// 	mod_temp_e modifier_temp;
+typedef struct {
 
-// 	drinks_e held_drink;
-// 	foods_e held_food;
+	main_scenes_e main_scene;
 
-// 	uint32_t colour_sky;
-// 	lv_obj_t *current_screen;
+	mod_weather_e modifier_weather;
+	mod_mood_e modifier_mood;
+	mod_time_e modifier_time;
 
-// } scene_state_s;
+	mod_temp_e modifier_temp;
 
-// typedef struct {
+	drinks_e held_drink;
+	foods_e held_food;
 
-// 	lv_obj_t *character;
-// 	lv_obj_t *character_face;
+	bool is_sick;
 
-// 	lv_obj_t *screen;
+	uint32_t colour_sky;
+	lv_obj_t *current_screen;
+	sprite_s current_sprite;
 
-// 	lv_obj_t *background;
-// } scene_obj_meadow_s;
+} scene_state_s;
 
-// typedef struct {
+typedef struct {
 
-// 	lv_obj_t *character;
-// 	lv_obj_t *character_face;
+	lv_obj_t *screen;
+	lv_obj_t *background;
 
-// 	lv_obj_t *screen;
-// 	lv_obj_t *background;
-// } scene_obj_beach_s;
+	character_container_s character;
 
-// typedef struct {
+} scene_obj_meadow_s;
 
-// 	lv_obj_t *character;
-// 	lv_obj_t *character_face;
+typedef struct {
 
-// 	lv_obj_t *background;
+	lv_obj_t *screen;
+	lv_obj_t *background;
 
-// 	lv_obj_t *screen;
+	character_container_s character;
+} scene_obj_beach_s;
 
-// 	lv_obj_t *trees[FOREST_NUM_TREES];
-// 	lv_obj_t *trees_bg[FOREST_NUM_TREES];
+typedef struct {
 
-// 	lv_obj_t *grass[FOREST_NUM_GRASS_ROWS][FOREST_NUM_GRASS_COLS];
-// } scene_obj_forest_s;
+	lv_obj_t *screen;
+	lv_obj_t *background;
 
-// typedef struct {
+	character_container_s character;
+} scene_obj_forest_s;
 
-// 	lv_obj_t *character;
-// 	lv_obj_t *character_face;
+typedef struct {
 
-// 	lv_obj_t *screen;
-// } scene_obj_city_s;
+	lv_obj_t *screen;
+	lv_obj_t *background;
 
-// typedef struct {
+	character_container_s character;
+} scene_obj_city_s;
 
-// 	lv_obj_t *background;
+typedef struct {
 
-// 	lv_obj_t *character;
-// 	lv_obj_t *character_face;
+	lv_obj_t *screen;
+	lv_obj_t *background;
 
-// 	lv_obj_t *screen;
-// } scene_obj_shop_s;
+	character_container_s character;
+} scene_obj_shop_s;
 
-// extern scene_state_s scenes_state;
+extern scene_state_s scenes_state;
 
-// void scenes_init();
-// void scenes_draw();
+void scenes_init();
+void scenes_draw();
 
-// void scenes_set_time(mod_time_e time);
-// void scenes_set_mood(mod_mood_e mood);
-// void scenes_set_weather(mod_weather_e weather);
-// void scenes_set_main(main_scenes_e scene);
+void scenes_set_time(mod_time_e time);
+void scenes_set_mood(mod_mood_e mood);
+void scenes_set_weather(mod_weather_e weather);
+void scenes_set_main(main_scenes_e scene);
+void scenes_set_sprite(sprite_s sprite);
 
-// void scenes_set_temp_from_int_c(int8_t c);
-// #endif
+void scenes_toggle_sick();
+void scenes_set_temp_from_int_c(int8_t c);
+#endif

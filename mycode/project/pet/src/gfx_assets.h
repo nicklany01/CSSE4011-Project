@@ -12,6 +12,11 @@
 #include <lvgl.h>
 #endif
 
+// misc
+extern const lv_image_dsc_t pizza;
+extern const lv_image_dsc_t anger;
+
+// scene backgrounds
 extern const lv_image_dsc_t scene_forest_day;
 extern const lv_image_dsc_t scene_forest_night;
 
@@ -25,8 +30,26 @@ extern const lv_image_dsc_t scene_shop_day;
 
 // character sprites
 extern const lv_image_dsc_t sprite_base;
+extern const lv_image_dsc_t sprite_ice;
+extern const lv_image_dsc_t sprite_cherry;
+
+extern const lv_image_dsc_t sprite_sick;
+extern const lv_image_dsc_t sprite_1_sick;
+extern const lv_image_dsc_t sprite_2_sick;
 
 extern const lv_image_dsc_t face_angry;
 extern const lv_image_dsc_t face_happy;
 extern const lv_image_dsc_t face_sad;
 extern const lv_image_dsc_t face_sleepy;
+extern const lv_image_dsc_t face_neutral;
+
+extern const lv_image_dsc_t face_1_angry;
+extern const lv_image_dsc_t face_1_happy;
+extern const lv_image_dsc_t face_1_sad;
+extern const lv_image_dsc_t face_1_sleepy;
+
+extern const lv_image_dsc_t face_2_angry;
+extern const lv_image_dsc_t face_2_happy;
+extern const lv_image_dsc_t face_2_sad;
+extern const lv_image_dsc_t face_2_sleepy;
+extern const lv_image_dsc_t face_2_neutral;
