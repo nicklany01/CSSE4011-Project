@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include "scenes.h"
+#include "friends.h"
 #include "gfx_assets.h"
 
 scene_state_s scenes_state = {
@@ -65,6 +66,13 @@ const lv_image_dsc_t *sprite_sick_lookup[SPRITE_MAX] = {
 	[SPRITE_CHERRY] = &sprite_2_sick
 };
 
+const lv_image_dsc_t *sprite_mini_lookup[SPRITE_MAX] = {
+
+	[SPRITE_ZERO] = &sprite_mini,
+	[SPRITE_ICE] = &sprite_1_mini,
+	[SPRITE_CHERRY] = &sprite_2_mini
+};
+
 scene_obj_meadow_s scene_meadow = {
 	.screen = NULL,
 };
@@ -95,24 +103,33 @@ static uint32_t sky_colours_sunny[] = {
 	[MOD_TIME_NIGHT] = 0x000000
 };
 
+// 20 is probably more than we'll ever need lmao
+mini_timeout_counter_s mini_pkt_register[MINI_PKT_REG_MAX];
+int mini_register_idx = 0;
+
 void scenes_set_main(main_scenes_e scene) {
 	scenes_state.main_scene = scene;
 
 	switch (scenes_state.main_scene) {
 		case MAIN_SCENE_MEADOW:
 			scenes_state.current_screen = scene_meadow.screen;
+			scenes_state.current_character = &scene_meadow.character;
 			break;
 		case MAIN_SCENE_BEACH:
 			scenes_state.current_screen = scene_beach.screen;
+			scenes_state.current_character = &scene_beach.character;
 			break;
 		case MAIN_SCENE_FOREST:
 			scenes_state.current_screen = scene_forest.screen;
+			scenes_state.current_character = &scene_forest.character;
 			break;
 		case MAIN_SCENE_CITY:
 			scenes_state.current_screen = scene_city.screen;
+			scenes_state.current_character = &scene_city.character;
 			break;
 		case MAIN_SCENE_SHOP:
 			scenes_state.current_screen = scene_shop.screen;
+			scenes_state.current_character = &scene_shop.character;
 			break;
 		default:
 			break;
@@ -125,27 +142,7 @@ void scenes_character_update() {
 
 	const uint8_t *target_sprite = NULL;
 	const lv_image_dsc_t *target_face = NULL;
-	character_container_s *character = NULL;
-
-	switch (scenes_state.main_scene) {
-		case MAIN_SCENE_MEADOW:
-			character = &scene_meadow.character;
-			break;
-		case MAIN_SCENE_BEACH:
-			character = &scene_beach.character;
-			break;
-		case MAIN_SCENE_CITY:
-			character = &scene_city.character;
-			break;
-		case MAIN_SCENE_FOREST:
-			character = &scene_forest.character;
-			break;
-		case MAIN_SCENE_SHOP:
-			character = &scene_shop.character;
-			break;
-		default:
-			return;
-	}
+	character_container_s *character = scenes_state.current_character;
 
 	switch (scenes_state.current_sprite) {
 		case SPRITE_ZERO:
@@ -373,10 +370,214 @@ void scenes_init_character(main_scenes_e scene) {
 	lv_image_set_src(character->anger, &anger);
 	lv_obj_set_pos(character->base, POSITION_X_CHARACTER, POSITION_Y_CHARACTER);
 	lv_obj_set_pos(character->sick, POSITION_X_CHARACTER, POSITION_Y_CHARACTER);
+
+	for (int i = 0; i < MINI_SPRITE_MAX; i++) {
+		character->mini_register[i].sprite = -1;
+		character->mini_register[i].pex_id = 0;
+
+		character->mini_register[i].mini = lv_image_create(screen);
+		lv_obj_set_pos(character->mini_register[i].mini, 26*i + (MINI_SPRITE_PADDING * (i + 1)), 5);
+		lv_obj_add_flag(character->mini_register[i].mini, LV_OBJ_FLAG_HIDDEN);
+	}
+	scenes_state.current_character = character;
 	scenes_character_update();
 }
 
+void scenes_adjust_minis(character_container_s *character) {
+	mini_register_obj_s *obj;
+	mini_register_obj_s *scratch_obj;
+	mini_register_obj_s scratch_register[MINI_SPRITE_MAX];
+	int runner = 0;
+
+	// i know in place would be better but ceebs at this point tbh
+
+	for (int i = 0; i < MINI_SPRITE_MAX; i++) {
+		obj = &character->mini_register[i];
+		if (obj->pex_id == 0) {
+			// this condition means
+			// a mini is now invalid
+			scratch_register[i].pex_id = 0;
+			scratch_register[i].sprite = -1;
+			continue;
+		}
+
+		scratch_register[runner].pex_id = obj->pex_id;
+		scratch_register[runner].sprite = obj->sprite;
+		runner++;
+	}
+
+	for (int i = 0; i < MINI_SPRITE_MAX; i++) {
+		obj = &character->mini_register[i];
+		scratch_obj = &scratch_register[i];
+
+		obj->pex_id = scratch_obj->pex_id;
+		obj->sprite = scratch_obj->sprite;
+
+		if (obj->pex_id != 0 && obj->sprite != -1) {
+			lv_image_set_src(obj->mini, sprite_mini_lookup[obj->sprite]);
+			lv_obj_clear_flag(obj->mini, LV_OBJ_FLAG_HIDDEN);
+		} else {
+			lv_obj_add_flag(obj->mini, LV_OBJ_FLAG_HIDDEN);
+		}
+	}
+}
+
+void scenes_remove_mini(main_scenes_e scene, pex_uuid_t pex_id, bool do_reshift) {
+
+	character_container_s *character;
+	mini_register_obj_s *obj;
+
+	switch (scene) {
+		case MAIN_SCENE_MEADOW:
+			character = &scene_meadow.character;
+			break;
+		case MAIN_SCENE_BEACH:
+			character = &scene_beach.character;
+			break;
+		case MAIN_SCENE_CITY:
+			character = &scene_city.character;
+			break;
+		case MAIN_SCENE_FOREST:
+			character = &scene_forest.character;
+			break;
+		case MAIN_SCENE_SHOP:
+			character = &scene_shop.character;
+			break;
+		default:
+			return;
+	}
+
+	for (int i = 0; i < MINI_SPRITE_MAX; i++) {
+		obj = &character->mini_register[i];
+		if (obj->pex_id == pex_id) {
+			obj->pex_id = 0;
+			break;
+		}
+	}
+
+	if (do_reshift) {
+		// reshift the register
+		scenes_adjust_minis(character);
+	}
+}
+
+void scenes_update_mini_pkt_register(int64_t uptime) {
+	mini_timeout_counter_s *counter;
+	for (int i = 0; i < MINI_PKT_REG_MAX; i++) {
+		counter = &mini_pkt_register[i];
+		if (uptime - counter->last_rx > MINI_PKT_TIMEOUT_TICKS) {
+			scenes_remove_mini(counter->scene, counter->pex_id, true);
+
+			counter->last_rx = 0;
+			counter->pex_id = 0;
+			counter->scene = 0;
+		}
+	}
+}
+
+void scenes_add_mini(main_scenes_e scene, pex_uuid_t pex_id, sprite_s sprite) {
+
+	// first check if we're already there
+	character_container_s *character;
+	mini_register_obj_s *obj;
+
+	switch (scene) {
+		case MAIN_SCENE_MEADOW:
+			character = &scene_meadow.character;
+			break;
+		case MAIN_SCENE_BEACH:
+			character = &scene_beach.character;
+			break;
+		case MAIN_SCENE_CITY:
+			character = &scene_city.character;
+			break;
+		case MAIN_SCENE_FOREST:
+			character = &scene_forest.character;
+			break;
+		case MAIN_SCENE_SHOP:
+			character = &scene_shop.character;
+			break;
+		default:
+			return;
+	}
+
+	int next_free = -1;
+
+	for (int i = 0; i < MINI_SPRITE_MAX; i++) {
+		obj = &character->mini_register[i];
+		if (obj->pex_id == pex_id) {
+			if (obj->sprite == sprite) {
+				// dnc
+				return;
+			}
+			// sprite changed
+			lv_image_set_src(obj->mini, sprite_mini_lookup[sprite]);
+			return;
+		}
+
+		if (obj->pex_id == 0 && next_free == -1) {
+			next_free = i;
+		}
+	}
+
+	// set up mini
+	obj = &character->mini_register[next_free];
+	obj->pex_id = pex_id;
+	obj->sprite = sprite;
+
+	lv_image_set_src(obj->mini, sprite_mini_lookup[sprite]);
+	lv_obj_clear_flag(obj->mini, LV_OBJ_FLAG_HIDDEN);
+}
+
+void scenes_process_mini_pkt_rx(int64_t last_rx, main_scenes_e scene, pex_uuid_t pex_id, sprite_s sprite) {
+
+	mini_timeout_counter_s *counter;
+	int next_free = -1;
+
+	for (int i = 0; i < MINI_PKT_REG_MAX; i++) {
+		counter = &mini_pkt_register[i];
+		if (counter->pex_id == pex_id) {
+			counter->pex_id = pex_id;
+
+			if (counter->scene != scene) {
+				// we had a scene change, get rid of it
+				scenes_remove_mini(counter->scene, pex_id, true);
+			} else if (counter->sprite != sprite) {
+				// we had a change of sprite, change it
+				scenes_add_mini(counter->scene, counter->pex_id, counter->sprite);
+			}
+
+			counter->scene = scene;
+			counter->sprite = sprite;
+			counter->last_rx = last_rx;
+
+			return;
+		}
+
+		if (next_free == -1 && counter->pex_id == 0) {
+			next_free = i;
+		}
+	}
+
+	// if we are here we are brand new
+	counter = &mini_pkt_register[next_free];
+
+	counter->pex_id = pex_id;
+	counter->scene = scene;
+	counter->sprite = sprite;
+	counter->last_rx = last_rx;
+
+	scenes_add_mini(counter->scene, counter->pex_id, counter->sprite);
+}
+
 void scenes_init() {
+
+	for (int i = 0; i < MINI_PKT_REG_MAX; i++) {
+		mini_pkt_register[i].last_rx = 0;
+		mini_pkt_register[i].pex_id = 0;
+		mini_pkt_register[i].scene = 0;
+		mini_pkt_register[i].sprite = 0;
+	}
 
 	scene_meadow.screen = lv_obj_create(NULL);
 	scene_beach.screen = lv_obj_create(NULL);
@@ -396,7 +597,7 @@ void scenes_init() {
 	scenes_init_character(MAIN_SCENE_CITY);
 	scenes_init_character(MAIN_SCENE_SHOP);
 
-	scenes_set_main(MAIN_SCENE_FOREST);
+	scenes_set_main(MAIN_SCENE_MEADOW);
 }
 
 void scenes_setup_weather() {

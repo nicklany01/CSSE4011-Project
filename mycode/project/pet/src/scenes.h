@@ -7,6 +7,9 @@
 #include <lvgl.h>
 
 #include "foods.h"
+#include "friends.h"
+
+#define MINI_PKT_REG_MAX 20
 
 #define POSITION_X_CHARACTER 60
 #define POSITION_Y_CHARACTER 0
@@ -40,6 +43,13 @@
 
 #define SCREEN_SIZE_W 320
 #define SCREEN_SIZE_H 240
+
+#define MINI_SPRITE_PADDING 10
+#define MINI_SPRITE_START 0
+
+#define MINI_SPRITE_MAX 8
+
+#define MINI_PKT_TIMEOUT_TICKS 5000
 
 typedef enum {
 
@@ -110,10 +120,27 @@ typedef enum {
 
 typedef struct {
 
+	pex_uuid_t pex_id;
+	sprite_s sprite;
+	lv_obj_t *mini;
+} mini_register_obj_s;
+
+typedef struct {
+
+	int64_t last_rx;
+	pex_uuid_t pex_id;
+	main_scenes_e scene;
+	sprite_s sprite;
+} mini_timeout_counter_s;
+
+typedef struct {
+
 	lv_obj_t *base;
 	lv_obj_t *face;
 	lv_obj_t *anger;
 	lv_obj_t *sick;
+
+	mini_register_obj_s mini_register[MINI_SPRITE_MAX];
 } character_container_s;
 
 typedef struct {
@@ -133,6 +160,7 @@ typedef struct {
 
 	uint32_t colour_sky;
 	lv_obj_t *current_screen;
+	character_container_s *current_character;
 	sprite_s current_sprite;
 
 } scene_state_s;
@@ -179,6 +207,7 @@ typedef struct {
 } scene_obj_shop_s;
 
 extern scene_state_s scenes_state;
+extern mini_timeout_counter_s mini_pkt_register[MINI_PKT_REG_MAX];
 
 void scenes_init();
 void scenes_draw();
@@ -188,6 +217,11 @@ void scenes_set_mood(mod_mood_e mood);
 void scenes_set_weather(mod_weather_e weather);
 void scenes_set_main(main_scenes_e scene);
 void scenes_set_sprite(sprite_s sprite);
+
+void scenes_add_mini(main_scenes_e scene, pex_uuid_t pex_id, sprite_s sprite);
+void scenes_adjust_minis(character_container_s *character);
+void scenes_remove_mini(main_scenes_e scene, pex_uuid_t pex_id, bool do_reshift);
+void scenes_update_mini_pkt_register(int64_t uptime);
 
 void scenes_toggle_sick();
 void scenes_set_temp_from_int_c(int8_t c);

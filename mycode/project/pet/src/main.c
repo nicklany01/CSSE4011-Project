@@ -40,6 +40,7 @@
 LOG_MODULE_REGISTER(main);
 
 struct k_timer comms_state_timer;
+struct k_timer mini_check_timer;
 
 struct k_event game_event_block;
 struct k_sem uart_srvc_lock;
@@ -384,9 +385,9 @@ static void thread_uart_handler(void *a, void *b, void *c) {
 	}
 }
 
-void accel_poll_timeout(struct k_timer *timer) {
+void mini_check_timeout(struct k_timer *timer) {
 
-	k_event_post(&game_event_block, GAME_EVT_ACCEL_SHAKE);
+	scenes_update_mini_pkt_register(k_uptime_get());
 }
 
 /* <-- GAME_HANDLER -->
@@ -411,6 +412,9 @@ static void thread_game_handler(void *a, void *b, void *c) {
 	// start our day :)
 	journal_add_entry(JOURNAL_EVT_WAKE, get_since_epoch());
 
+	k_timer_init(&mini_check_timer, mini_check_timeout, NULL);
+	k_timer_start(&mini_check_timer, K_SECONDS(5), K_SECONDS(5));
+
 	while (true) {
 
 		game_events = k_event_wait(&game_event_block, GAME_EVTS_ALL, true, K_FOREVER);
@@ -424,6 +428,9 @@ static void thread_game_handler(void *a, void *b, void *c) {
 		}
 
 		if (game_events & GAME_EVT_OTHER_PET_RSSI) {
+
+			scenes_process_mini_pkt_rx(k_uptime_get(), pet_uart_srvc_rssi_pkt.pex_state.scene,
+				pet_uart_srvc_rssi_pkt.id, pet_uart_srvc_rssi_pkt.sprite);
 
 			switch (friends_pex_id_is_what(pet_uart_srvc_rssi_pkt.id)) {
 				case FRIENDSHIP_FRIEND:

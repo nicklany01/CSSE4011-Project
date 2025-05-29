@@ -149,6 +149,7 @@ static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
 
 					pet_uart_srvc_rssi_pkt.rssi = pet_adv.rssi;
 					pet_uart_srvc_rssi_pkt.id = d_u16(pet_adv.mf_data + 2);
+					pet_uart_srvc_rssi_pkt.sprite = pet_adv.mf_data[BLE_ADV_MY_SPRITE];
 
 					deserialize_pet_exchange_state_pkt(&pet_uart_srvc_rssi_pkt.pex_state,
 						pet_adv.mf_data + (BLE_ADV_PEX_STATE_START - 1));

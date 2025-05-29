@@ -37,6 +37,10 @@ extern const lv_image_dsc_t sprite_sick;
 extern const lv_image_dsc_t sprite_1_sick;
 extern const lv_image_dsc_t sprite_2_sick;
 
+extern const lv_image_dsc_t sprite_mini;
+extern const lv_image_dsc_t sprite_1_mini;
+extern const lv_image_dsc_t sprite_2_mini;
+
 extern const lv_image_dsc_t face_angry;
 extern const lv_image_dsc_t face_happy;
 extern const lv_image_dsc_t face_sad;
