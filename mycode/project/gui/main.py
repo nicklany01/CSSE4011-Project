@@ -8,6 +8,7 @@ import club.pet_ble_service as ble
 
 
 def rx_ble_comms(pets: list[pet_setup.Pet]):
+
 	while True:
 		for pet in pets:
 			asyncio.run(pet.ble_update_journal(pets))
@@ -17,6 +18,10 @@ def rx_ble_comms(pets: list[pet_setup.Pet]):
 	
 
 if __name__ == '__main__':
+
+	# pets_in_area = asyncio.run(ble.pet_ble_discover_pets())
+	# print(pets_in_area)
+
 	pet0 = pet_setup.Pet("data/pet_0.json")
 	pet1 = pet_setup.Pet("data/pet_1.json")
 	pet2 = pet_setup.Pet("data/pet_2.json")

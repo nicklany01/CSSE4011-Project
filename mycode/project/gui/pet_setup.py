@@ -233,6 +233,8 @@ class Pet():
 
 
 	async def ble_update_journal(self, pets: list):
+		await ble.pet_ble_init()
+
 		print(f"Getting journals for {hex(self.id)}")
 		pet_journals: list[ble.PetJournal] = await ble.pet_retrieve_command(self.id, ble.pet_ble_retrieve_journal)
 
@@ -250,6 +252,8 @@ class Pet():
 	
 
 	async def ble_update_personality(self):
+		await ble.pet_ble_init()
+
 		print(f"Getting personality for {hex(self.id)}")
 		personality = await ble.pet_retrieve_command(self.id, ble.pet_ble_retrieve_personality)
 
@@ -280,11 +284,13 @@ class Pet():
 		tx_thread = threading.Thread(target=self.tx_send_personality, args=(ppy_pkt,), daemon=True)
 		tx_thread.start()
 
+
 	def tx_send_personality(self, ppy_pkt):
 		asyncio.run(ble.pet_ble_set_personality(self.id, ppy_pkt))
 
 	
 	def send_state(self):
+		print("Sending pet state...")
 		state_pkt = ble.PetPEXStatePkt()
 
 		state_pkt.scene = self.scene.scene
@@ -303,9 +309,64 @@ class Pet():
 		asyncio.run(ble.pet_ble_set_state(self.id, state_pkt))
 
 
-	def send_relationships(self):
-		pass
+	def send_relationships(self, current_friends: list[int], new_friends: list[int], 
+						current_enemies: list[int], new_enemies: list[int]):
+		print("Updating relationships")
 
-	def tx_send_relationships(self, pkt):
-		pass
+		add_friends = []
+		remove_friends = []
+
+		add_enemies = []
+		remove_enemies = []
+
+		for new_friend in new_friends:
+			if not new_friend in current_friends:
+				add_friends.append(new_friend)
+		
+		for current_friend in current_friends:
+			if not current_friend in new_friends:
+				remove_friends.append(current_friend)
+
+		for new_enemy in new_enemies:
+			if not new_enemy in current_enemies:
+				add_enemies.append(new_enemy)
+		
+		for current_enemy in current_enemies:
+			if not current_enemy in new_enemies:
+				remove_enemies.append(current_enemy)
+
+		relation_pkts = []
+		for friend in add_friends:
+			print("Adding friend")
+			relationship_pkt = ble.PetWFCDemoCmdPkt()
+			relationship_pkt.cmd_id = ble.PET_WFC_DEMO_CMDS.ADD_FRIEND
+			relationship_pkt.cmd_arg = friend
+			relation_pkts.append(relationship_pkt)
+
+		for friend in remove_friends:
+			print("Removing friend")
+			relationship_pkt = ble.PetWFCDemoCmdPkt()
+			relationship_pkt.cmd_id = ble.PET_WFC_DEMO_CMDS.REM_FRIEND
+			relationship_pkt.cmd_arg = friend
+			relation_pkts.append(relationship_pkt)
+
+		for enemy in add_enemies:
+			print("Adding ememy")
+			relationship_pkt = ble.PetWFCDemoCmdPkt()
+			relationship_pkt.cmd_id = ble.PET_WFC_DEMO_CMDS.ADD_ENEMY
+			relationship_pkt.cmd_arg = enemy
+			relation_pkts.append(relationship_pkt)
+
+		for enemy in remove_enemies:
+			print("Removing enemy")
+			relationship_pkt = ble.PetWFCDemoCmdPkt()
+			relationship_pkt.cmd_id = ble.PET_WFC_DEMO_CMDS.REM_ENEMY
+			relationship_pkt.cmd_arg = enemy
+			relation_pkts.append(relationship_pkt)
+
+		tx_thread = threading.Thread(target=self.tx_send_relationships, args=(relation_pkts,), daemon=True)
+		tx_thread.start()
+
+	def tx_send_relationships(self, pkts):
+		asyncio.run(ble.pet_ble_update_relationship(self.id, pkts))
 

@@ -30,8 +30,8 @@ class PetInteract(tk.Frame):
             }
         }
 
-        self.friends = self.pet.friends
-        self.enemies = self.pet.enemies
+        self.friends = copy.deepcopy(self.pet.friends)
+        self.enemies = copy.deepcopy(self.pet.enemies)
 
         self.friend_lbl = {}
         self.enemy_lbl = {}
@@ -126,8 +126,6 @@ class PetInteract(tk.Frame):
             rd[p.id]["lbl_img"].configure(bg=config.COLOUR_INACTIVE)
             
 
-
-
     def save_environment(self):
         scene = self.ent_enviro["Scene"]["combobox"].get()
         time = self.ent_enviro["Time"]["combobox"].get()
@@ -148,8 +146,9 @@ class PetInteract(tk.Frame):
         self.pet.save_config()
 
     def save_relationships(self):
-        self.pet.friends = self.friends
-        self.pet.enemies = self.enemies
+        self.pet.send_relationships(self.pet.friends, self.friends, self.pet.enemies, self.enemies)
 
-        self.pet.send_relationships()
+        self.pet.friends = copy.deepcopy(self.friends)
+        self.pet.enemies = copy.deepcopy(self.enemies)
+
         self.pet.save_config()
