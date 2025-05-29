@@ -27,13 +27,23 @@ BLE_UUID_SRV_WFC = "4A259CE4-FEED-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_WFC_RX = "4A259CE4-4774-4153-AD28-B8D61B4F447A"
 BLE_UUID_CHR_WFC_TX = "4A259CE4-4775-4153-AD28-B8D61B4F447A"
 
-GAME_EVT_PPY_RX_PERSONALITY = asyncio.Event()
-GAME_EVT_PEX_RX_STATE = asyncio.Event()
-GAME_EVT_PEX_RX_JOURNAL = asyncio.Event()
+GAME_EVT_PPY_RX_PERSONALITY = None
+GAME_EVT_PEX_RX_STATE = None
+GAME_EVT_PEX_RX_JOURNAL = None
 
-GAME_EVT_WFC_RX_RTC = asyncio.Event()
+GAME_EVT_WFC_RX_RTC = None
 
 GAME_RX_JOURNAL = {}
+
+async def pet_ble_init():
+	global GAME_EVT_PPY_RX_PERSONALITY, GAME_EVT_PEX_RX_STATE, \
+		GAME_EVT_PEX_RX_JOURNAL, GAME_EVT_WFC_RX_RTC
+
+	GAME_EVT_PPY_RX_PERSONALITY = asyncio.Event()
+	GAME_EVT_PEX_RX_STATE = asyncio.Event()
+	GAME_EVT_PEX_RX_JOURNAL = asyncio.Event()
+
+	GAME_EVT_WFC_RX_RTC = asyncio.Event()
 
 def e_u16(value, buff):
 	buff.extend(value.to_bytes(2, "big"))
@@ -377,6 +387,9 @@ async def find_ble_pet(pex_id):
 	if pex_id == SIENNA_MASTER_PEX:
 		return sienna_devices
 
+	if len(sienna_devices) == 0:
+		return None
+
 	return sienna_devices[0]
 
 async def pet_ble_retrieve_journal(client):
@@ -506,18 +519,25 @@ async def pet_ble_discover_pets():
 
 async def main():
 
+	await pet_ble_init()
+
 	demo_pkt = PetWFCDemoCmdPkt()
+	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_MOOD
+	demo_pkt.cmd_arg = 4
+
+	await pet_send_packet(0xBABE, demo_pkt, BLE_UUID_CHR_WFC_TX)
 
 	ppy_pkt = PetPPYPersonalityPkt()
 	ppy_pkt.randomize()
 
-	ppy_pkt.sprite = 0
+	ppy_pkt.sprite = 2
+	await pet_ble_set_personality(0xBABE, ppy_pkt)
 
-	#pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
+	pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
 
-	#for pet in pet_journal:
-	#	print(f"JOURNAL OF PET {hex(pet)}")
-	#	print(pet_journal[pet])
+	for pet in pet_journal:
+		print(f"JOURNAL OF PET {hex(pet)}")
+		print(pet_journal[pet])
 
 	pets_in_area = await pet_ble_discover_pets()
 	print(pets_in_area)

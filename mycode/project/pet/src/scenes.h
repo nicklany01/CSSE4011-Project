@@ -1,10 +1,12 @@
 #ifndef SCENES_H
 #define SCENES_H
 
-#include "foods.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 #include <lvgl.h>
+
+#include "foods.h"
 
 #define POSITION_X_CHARACTER 60
 #define POSITION_Y_CHARACTER 0
@@ -108,6 +110,14 @@ typedef enum {
 
 typedef struct {
 
+	lv_obj_t *base;
+	lv_obj_t *face;
+	lv_obj_t *anger;
+	lv_obj_t *sick;
+} character_container_s;
+
+typedef struct {
+
 	main_scenes_e main_scene;
 
 	mod_weather_e modifier_weather;
@@ -119,6 +129,8 @@ typedef struct {
 	drinks_e held_drink;
 	foods_e held_food;
 
+	bool is_sick;
+
 	uint32_t colour_sky;
 	lv_obj_t *current_screen;
 	sprite_s current_sprite;
@@ -127,54 +139,43 @@ typedef struct {
 
 typedef struct {
 
-	lv_obj_t *character;
-	lv_obj_t *character_face;
-
 	lv_obj_t *screen;
-
 	lv_obj_t *background;
+
+	character_container_s character;
+
 } scene_obj_meadow_s;
 
 typedef struct {
 
-	lv_obj_t *character;
-	lv_obj_t *character_face;
-
 	lv_obj_t *screen;
 	lv_obj_t *background;
+
+	character_container_s character;
 } scene_obj_beach_s;
 
 typedef struct {
 
-	lv_obj_t *character;
-	lv_obj_t *character_face;
-
+	lv_obj_t *screen;
 	lv_obj_t *background;
 
-	lv_obj_t *screen;
-
-	lv_obj_t *trees[FOREST_NUM_TREES];
-	lv_obj_t *trees_bg[FOREST_NUM_TREES];
-
-	lv_obj_t *grass[FOREST_NUM_GRASS_ROWS][FOREST_NUM_GRASS_COLS];
+	character_container_s character;
 } scene_obj_forest_s;
 
 typedef struct {
 
-	lv_obj_t *character;
-	lv_obj_t *character_face;
-
 	lv_obj_t *screen;
+	lv_obj_t *background;
+
+	character_container_s character;
 } scene_obj_city_s;
 
 typedef struct {
 
+	lv_obj_t *screen;
 	lv_obj_t *background;
 
-	lv_obj_t *character;
-	lv_obj_t *character_face;
-
-	lv_obj_t *screen;
+	character_container_s character;
 } scene_obj_shop_s;
 
 extern scene_state_s scenes_state;
@@ -188,5 +189,6 @@ void scenes_set_weather(mod_weather_e weather);
 void scenes_set_main(main_scenes_e scene);
 void scenes_set_sprite(sprite_s sprite);
 
+void scenes_toggle_sick();
 void scenes_set_temp_from_int_c(int8_t c);
 #endif

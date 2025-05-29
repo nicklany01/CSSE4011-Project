@@ -451,6 +451,7 @@ static void thread_game_handler(void *a, void *b, void *c) {
 			}
 
 			if (shake_state.count > SHAKE_COUNT_THRESH) {
+				scenes_toggle_sick();
 				journal_add_entry(JOURNAL_EVT_SHAKE, get_since_epoch());
 			}
 
@@ -466,7 +467,7 @@ int main() {
 
 	display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 	if (!device_is_ready(display_dev)) {
-		return 0;
+		return 1;
 	}
 
 	k_sem_init(&uart_srvc_lock, 1, 1);
@@ -480,21 +481,21 @@ int main() {
 	mood_init();
 	//sound_init();
 	if (mpu6886_init()) {
-		return;
+		return 2;
 	}
 
 	init_personality();
 
 	if (!os_ble_init()) {
-		return;
+		return 3;
 	}
 
 	if (!os_uart_init()) {
-		return;
+		return 4;
 	};
 
 	if (!device_is_ready(mpu6886_i2c.bus)) {
-		return;
+		return 5;
 	}
 
 	k_event_init(&game_event_block);
@@ -530,6 +531,11 @@ int main() {
 		// screen refresh 2Hz
 		scenes_draw();
 		k_sleep(K_MSEC(500));
+
+		// get rid of sick on next iter
+		if (scenes_state.is_sick) {
+			scenes_toggle_sick();
+		}
 	}
 }
 /*

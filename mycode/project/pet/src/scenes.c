@@ -20,8 +20,15 @@ int sprite_face_pos[SPRITE_MAX][2] = {
 	[SPRITE_CHERRY] = {POSITION_X_CHARACTER + 47, POSITION_Y_CHARACTER + 86}
 };
 
+int anger_icon_pos[SPRITE_MAX][2] = {
+
+	[SPRITE_ZERO] = {POSITION_X_CHARACTER + 121, 49},
+	[SPRITE_ICE] = {POSITION_X_CHARACTER + 114, 37},
+	[SPRITE_CHERRY] = {POSITION_X_CHARACTER + 122, 35}
+};
+
 const lv_image_dsc_t* sprite_0_mood_lookup[MOD_MOOD_MAX] = {
-	[MOD_MOOD_NEUTRAL] = &face_happy,
+	[MOD_MOOD_NEUTRAL] = &face_neutral,
 	[MOD_MOOD_HAPPY] = &face_happy,
 	[MOD_MOOD_SAD] = &face_sad,
 	[MOD_MOOD_ANGRY] = &face_angry,
@@ -49,6 +56,13 @@ const lv_image_dsc_t *sprite_base_lookup[SPRITE_MAX] = {
 	[SPRITE_ZERO] = &sprite_base,
 	[SPRITE_ICE] = &sprite_ice,
 	[SPRITE_CHERRY] = &sprite_cherry
+};
+
+const lv_image_dsc_t *sprite_sick_lookup[SPRITE_MAX] = {
+
+	[SPRITE_ZERO] = &sprite_sick,
+	[SPRITE_ICE] = &sprite_1_sick,
+	[SPRITE_CHERRY] = &sprite_2_sick
 };
 
 scene_obj_meadow_s scene_meadow = {
@@ -95,7 +109,7 @@ void scenes_set_main(main_scenes_e scene) {
 			scenes_state.current_screen = scene_forest.screen;
 			break;
 		case MAIN_SCENE_CITY:
-			//scenes_state.current_screen = scene_city.screen;
+			scenes_state.current_screen = scene_city.screen;
 			break;
 		case MAIN_SCENE_SHOP:
 			scenes_state.current_screen = scene_shop.screen;
@@ -109,32 +123,25 @@ void scenes_set_main(main_scenes_e scene) {
 
 void scenes_character_update() {
 
-	lv_obj_t *character_face;
-	lv_obj_t *character;
-
-	const uint8_t *target_face = NULL;
 	const uint8_t *target_sprite = NULL;
+	const lv_image_dsc_t *target_face = NULL;
+	character_container_s *character = NULL;
 
 	switch (scenes_state.main_scene) {
 		case MAIN_SCENE_MEADOW:
-			character_face = scene_meadow.character_face;
-			character = scene_meadow.character;
+			character = &scene_meadow.character;
 			break;
 		case MAIN_SCENE_BEACH:
-			character_face = scene_beach.character_face;
-			character = scene_beach.character;
+			character = &scene_beach.character;
 			break;
 		case MAIN_SCENE_CITY:
-			character_face = scene_city.character_face;
-			character = scene_city.character;
+			character = &scene_city.character;
 			break;
 		case MAIN_SCENE_FOREST:
-			character_face = scene_forest.character_face;
-			character = scene_forest.character;
+			character = &scene_forest.character;
 			break;
 		case MAIN_SCENE_SHOP:
-			character_face = scene_shop.character_face;
-			character = scene_shop.character;
+			character = &scene_shop.character;
 			break;
 		default:
 			return;
@@ -154,13 +161,37 @@ void scenes_character_update() {
 			break;
 	}
 
-	lv_image_set_src(character, sprite_base_lookup[scenes_state.current_sprite]);
-	lv_obj_set_pos(character, POSITION_X_CHARACTER, POSITION_Y_CHARACTER);
+	lv_image_set_src(character->base, sprite_base_lookup[scenes_state.current_sprite]);
 
 	if (target_face != NULL) {
-		lv_image_set_src(character_face, target_face);
-		lv_obj_set_pos(character_face, sprite_face_pos[scenes_state.current_sprite][0],
+		lv_image_set_src(character->face, target_face);
+		lv_obj_set_pos(character->face, sprite_face_pos[scenes_state.current_sprite][0],
 			sprite_face_pos[scenes_state.current_sprite][1]);
+	}
+
+	// NOTE: I know it's 'inefficient' to change
+	// these flags every draw... and I don't care.
+
+	if (scenes_state.modifier_mood == MOD_MOOD_ANGRY || scenes_state.is_sick) {
+
+		lv_obj_set_pos(character->anger, anger_icon_pos[scenes_state.current_sprite][0],
+			anger_icon_pos[scenes_state.current_sprite][1]);
+		lv_obj_clear_flag(character->anger, LV_OBJ_FLAG_HIDDEN);
+	} else {
+		lv_obj_add_flag(character->anger, LV_OBJ_FLAG_HIDDEN);
+	}
+
+	if (scenes_state.is_sick) {
+		lv_obj_add_flag(character->base, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_add_flag(character->face, LV_OBJ_FLAG_HIDDEN);
+
+		lv_image_set_src(character->sick, sprite_sick_lookup[scenes_state.current_sprite]);
+		lv_obj_clear_flag(character->sick, LV_OBJ_FLAG_HIDDEN);
+	} else {
+		lv_obj_clear_flag(character->base, LV_OBJ_FLAG_HIDDEN);
+		lv_obj_clear_flag(character->face, LV_OBJ_FLAG_HIDDEN);
+
+		lv_obj_add_flag(character->sick, LV_OBJ_FLAG_HIDDEN);
 	}
 }
 
@@ -189,6 +220,13 @@ void scenes_shop_init() {
 
 	scene_shop.background = lv_image_create(scene_shop.screen);
 	lv_image_set_src(scene_shop.background, &scene_shop_day);
+	lv_obj_set_pos(scene_shop.background, 0, 0);
+}
+
+void scenes_city_init() {
+
+	scene_shop.background = lv_image_create(scene_shop.screen);
+	//lv_image_set_src(scene_shop.background, &scene_shop_day);
 	lv_obj_set_pos(scene_shop.background, 0, 0);
 }
 
@@ -252,6 +290,10 @@ void scenes_beach_update() {
 
 }
 
+void scenes_city_update() {
+	return;
+}
+
 void scenes_set_mood(mod_mood_e mood) {
 	scenes_state.modifier_mood = mood;
 }
@@ -267,6 +309,14 @@ void scenes_set_time(mod_time_e time) {
 void scenes_set_sprite(sprite_s sprite) {
 	scenes_state.current_sprite = sprite;
 	scenes_character_update();
+}
+
+void scenes_set_is_sick(bool sick) {
+	scenes_state.is_sick = sick;
+}
+
+void scenes_toggle_sick() {
+	scenes_state.is_sick = !scenes_state.is_sick;
 }
 
 void scenes_set_temp_from_int_c(int8_t c) {
@@ -286,51 +336,43 @@ void scenes_set_temp_from_int_c(int8_t c) {
 
 void scenes_init_character(main_scenes_e scene) {
 
-	lv_obj_t *character;
-	lv_obj_t *character_face;
+	character_container_s *character;
 	lv_obj_t *screen;
 
 	switch (scene) {
 		case MAIN_SCENE_MEADOW:
-			scene_meadow.character = lv_image_create(scene_meadow.screen);
-			scene_meadow.character_face = lv_image_create(scene_meadow.screen);
-
-			character = scene_meadow.character;
-			character_face = scene_meadow.character_face;
+			character = &scene_meadow.character;
+			screen = scene_meadow.screen;
 			break;
 
 		case MAIN_SCENE_BEACH:
-			scene_beach.character = lv_image_create(scene_beach.screen);
-			scene_beach.character_face = lv_image_create(scene_beach.screen);
-
-			character = scene_beach.character;
-			character_face = scene_beach.character_face;
+			character = &scene_beach.character;
+			screen = scene_beach.screen;
 			break;
 		case MAIN_SCENE_CITY:
-			scene_city.character = lv_image_create(scene_city.screen);
-			scene_city.character_face = lv_image_create(scene_city.screen);
-
-			character = scene_city.character;
-			character_face = scene_city.character_face;
+			character = &scene_city.character;
+			screen = scene_city.screen;
 			break;
 		case MAIN_SCENE_FOREST:
-			scene_forest.character = lv_image_create(scene_forest.screen);
-			scene_forest.character_face = lv_image_create(scene_forest.screen);
-
-			character = scene_forest.character;
-			character_face = scene_forest.character_face;
+			character = &scene_forest.character;
+			screen = scene_forest.screen;
 			break;
 		case MAIN_SCENE_SHOP:
-			scene_shop.character = lv_image_create(scene_shop.screen);
-			scene_shop.character_face = lv_image_create(scene_shop.screen);
-
-			character = scene_shop.character;
-			character_face = scene_shop.character_face;
+			character = &scene_shop.character;
+			screen = scene_shop.screen;
 			break;
 		default:
 			return;
 	}
 
+	character->sick = lv_image_create(screen);
+	character->base = lv_image_create(screen);
+	character->face = lv_image_create(screen);
+	character->anger = lv_image_create(screen);
+
+	lv_image_set_src(character->anger, &anger);
+	lv_obj_set_pos(character->base, POSITION_X_CHARACTER, POSITION_Y_CHARACTER);
+	lv_obj_set_pos(character->sick, POSITION_X_CHARACTER, POSITION_Y_CHARACTER);
 	scenes_character_update();
 }
 
@@ -345,11 +387,13 @@ void scenes_init() {
 	scenes_meadow_init();
 	scenes_forest_init();
 	scenes_beach_init();
+	scenes_city_init();
 	scenes_shop_init();
 
 	scenes_init_character(MAIN_SCENE_MEADOW);
 	scenes_init_character(MAIN_SCENE_FOREST);
 	scenes_init_character(MAIN_SCENE_BEACH);
+	scenes_init_character(MAIN_SCENE_CITY);
 	scenes_init_character(MAIN_SCENE_SHOP);
 
 	scenes_set_main(MAIN_SCENE_FOREST);
