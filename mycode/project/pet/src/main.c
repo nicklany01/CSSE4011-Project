@@ -103,15 +103,19 @@ os_uart_passthru_s uart_passthru_tx = {
 typedef struct {
 
 	int count;
+	int rendered;
 } shake_state_s;
 
 #define ACCEL_POLL_PERIOD 500
 
 #define SHAKE_MAGNITUDE_THRESH 3
-#define SHAKE_COUNT_THRESH (3500 / ACCEL_POLL_PERIOD)
+#define SHAKE_COUNT_THRESH 10
+
+#define SHAKE_RENDER_LOOPS 8 + 1
 
 shake_state_s shake_state = {
-	.count = 0
+	.count = 0,
+	.rendered = 0
 };
 
 void update_epoch_from_pkt() {
@@ -441,18 +445,22 @@ static void thread_game_handler(void *a, void *b, void *c) {
 
 		if (game_events & GAME_EVT_ACCEL_SHAKE) {
 
-			mpu6886_read_accel(&accel);
-			magnitude = mpu6886_get_adjusted_accel_magnitude(&accel);
-
-			if (magnitude > SHAKE_MAGNITUDE_THRESH) {
-				shake_state.count += 1;
-			} else {
-				shake_state.count = 0;
-			}
+			shake_state.count += 1;
 
 			if (shake_state.count > SHAKE_COUNT_THRESH) {
-				scenes_toggle_sick();
-				journal_add_entry(JOURNAL_EVT_SHAKE, get_since_epoch());
+				switch (shake_state.rendered) {
+					case 0:
+						// we're sick, toggle log and render
+						scenes_toggle_sick();
+						journal_add_entry(JOURNAL_EVT_SHAKE, get_since_epoch());
+						shake_state.rendered = 1;
+						break;
+					default:
+						// we haven't rendered yet, do nothing.
+						// NOTE: next state change set by main thread
+						break;
+				}
+
 			}
 		}
 	}
@@ -565,9 +573,15 @@ int main() {
 		scenes_draw();
 		k_sleep(K_MSEC(500));
 
-		// get rid of sick on next iter
-		if (scenes_state.is_sick) {
+		if (shake_state.rendered > 0) {
+			shake_state.rendered += 1;
+		}
+
+		// get rid of sick for next iter
+		if (shake_state.rendered == SHAKE_RENDER_LOOPS) {
 			scenes_toggle_sick();
+			shake_state.count = 0;
+			shake_state.rendered = 0;
 		}
 	}
 }
