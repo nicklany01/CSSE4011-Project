@@ -176,12 +176,14 @@ void update_personality()
 	scenes_set_sprite(my_pet_ppy_pkt.sprite);
 }
 
-uint16_t get_since_epoch() {
+uint16_t get_since_epoch()
+{
 	time_t current = mktime(&time_state_container);
 	return (uint16_t)(current - epoch);
 }
 
-void comms_state_timeout(struct k_timer *timer) {
+void comms_state_timeout(struct k_timer *timer)
+{
 
 	if (timer == NULL || k_sem_take(&uart_srvc_lock, K_NO_WAIT))
 	{
@@ -221,15 +223,15 @@ void comms_state_timeout(struct k_timer *timer) {
 	}
 	scenes_set_mood(mapped_mood);
 
-	pex_state_pkt.scene = scenes_state.main_scene;
+	pex_state_pkt.scene = (uint8_t)scenes_state.main_scene;
 
-	pex_state_pkt.scene_weather = pet_mood.happiness;
-	pex_state_pkt.scene_mood = pet_mood.energy;
-	pex_state_pkt.scene_time = pet_mood.health;
-	pex_state_pkt.scene_temp = pet_mood.interaction;
+	pex_state_pkt.scene_weather = (uint8_t)pet_mood.happiness / 4;
+	pex_state_pkt.scene_mood = (uint8_t)pet_mood.energy / 4;
+	pex_state_pkt.scene_time = (uint8_t)pet_mood.health / 4;
+	pex_state_pkt.scene_temp = (uint8_t)pet_mood.interaction / 4;
 
-	pex_state_pkt.held_drink = pet_mood.expression;
-	pex_state_pkt.held_food = pet_mood.affection;
+	pex_state_pkt.held_drink = (uint8_t)pet_mood.expression;
+	pex_state_pkt.held_food = (uint8_t)pet_mood.affection / 4;
 
 	uart_passthru_rx.len = serialize_pet_exchange_state_pkt(&pex_state_pkt, uart_passthru_rx.buff);
 	os_uart_passthru(&uart_passthru_rx);
@@ -240,7 +242,8 @@ void comms_state_timeout(struct k_timer *timer) {
 	k_sem_give(&uart_srvc_lock);
 }
 
-void process_ble_passthru_packet() {
+void process_ble_passthru_packet()
+{
 
 	switch (uart_passthru_rx.buff[0])
 	{
@@ -678,17 +681,25 @@ int main()
 		get_since_epoch();
 
 		// update the scene from the RTC
-		if (time_state_container.tm_hour < 6) {
+		if (time_state_container.tm_hour < 6)
+		{
 			scenes_set_time(MOD_TIME_NIGHT);
-		} else if (time_state_container.tm_hour < 12) {
+		}
+		else if (time_state_container.tm_hour < 12)
+		{
 			scenes_set_time(MOD_TIME_MORNING);
-		} else if (time_state_container.tm_hour < 18) {
+		}
+		else if (time_state_container.tm_hour < 18)
+		{
 			scenes_set_time(MOD_TIME_AFTERNOON);
-		} else if (time_state_container.tm_hour < 24) {
+		}
+		else if (time_state_container.tm_hour < 24)
+		{
 			scenes_set_time(MOD_TIME_NIGHT);
 		}
 
-		if (shake_state.rendered > 0) {
+		if (shake_state.rendered > 0)
+		{
 			shake_state.rendered += 1;
 		}
 
