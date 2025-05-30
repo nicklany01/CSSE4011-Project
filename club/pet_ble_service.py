@@ -628,35 +628,8 @@ async def main():
 	#print(await discover_moods())
 	#return
 
-	global PET_SET_DATETIME
 
-	PET_SET_DATETIME = datetime(year=2002, day=17, month=3, hour=20)
-
-	await pet_set_rtc(47792)
-
-	time = await pet_retrieve_command(47792, pet_retrieve_rtc)
-	print(time)
-
-	return
-
-	demo_pkt = PetWFCDemoCmdPkt()
-	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_MOOD
-	demo_pkt.cmd_arg = 4
-
-	await pet_send_packet(0xBABA, demo_pkt, BLE_UUID_CHR_WFC_TX)
-
-	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_SCENE
-	demo_pkt.cmd_arg = 0
-
-	await pet_send_packet(0xBABA, demo_pkt, BLE_UUID_CHR_WFC_TX)
-
-	ppy_pkt = PetPPYPersonalityPkt()
-	ppy_pkt.randomize()
-
-	ppy_pkt.sprite = 0
-	await pet_ble_set_personality(0xBABA, ppy_pkt)
-
-	pet_journal = await pet_retrieve_command(0xBABA, pet_ble_retrieve_journal)
+	pet_journal = await pet_retrieve_command(0x30C6, pet_ble_retrieve_journal)
 
 	for pet in pet_journal:
 		print(f"JOURNAL OF PET {hex(pet)}")

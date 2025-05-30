@@ -120,7 +120,7 @@ void process_uart_packet() {
 			printf("Got a PEX.\r\n");
 
 			//deserialize_pet_exchange_state_pkt(&pet_pex_state_pkt, uart_passthru_rx.buff);
-			memcpy(my_mf_data + BLE_ADV_PEX_STATE_START, uart_passthru_rx.buff + 1, 7);
+			memcpy(my_mf_data + BLE_ADV_PEX_STATE_START, uart_passthru_rx.buff + 2, 7);
 
 			if (os_ble_state.state == OS_BLE_STATE_CONNECTED) {
 				ble_tx.charac = BLE_UUID_16_CHR_PEX_RX;
