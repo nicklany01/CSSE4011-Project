@@ -505,6 +505,8 @@ async def pet_retrieve_rtc(client):
 
 	return BLE_PKT_WFC_RTC_RX.to_date()
 
+PET_SET_DATETIME = datetime.now()
+
 async def pet_retrieve_command(pex_id, command):
 
 	while True:
@@ -545,6 +547,8 @@ async def pet_send_packet(pex_id, packet, uuid):
 		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
 		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
 
+		print(packet.serialize())
+
 		await client.write_gatt_char(uuid, packet.serialize(), response=False)
 
 		close_conn = PetWFCDemoCmdPkt()
@@ -556,6 +560,22 @@ async def pet_ble_set_personality(pex_id, ppy_pkt):
 
 	await pet_send_packet(pex_id, ppy_pkt, BLE_UUID_CHR_PPY_TX)
 
+async def pet_set_rtc(pex_id):
+
+	global PET_SET_DATETIME
+
+	rtc_set_pkt = PetWFCRtcPkt()
+	rtc_set_pkt.day = PET_SET_DATETIME.day
+	rtc_set_pkt.month = PET_SET_DATETIME.month
+	rtc_set_pkt.year = PET_SET_DATETIME.year - 1900
+
+	rtc_set_pkt.hrs = PET_SET_DATETIME.hour
+	rtc_set_pkt.mins = PET_SET_DATETIME.minute
+	rtc_set_pkt.secs = PET_SET_DATETIME.second
+
+	await pet_send_packet(pex_id, rtc_set_pkt, BLE_UUID_CHR_WFC_TX)
+
+
 async def pet_ble_discover_pets():
 
 	return await find_ble_pet(SIENNA_MASTER_PEX)
@@ -563,6 +583,17 @@ async def pet_ble_discover_pets():
 async def main():
 
 	await pet_ble_init()
+
+	global PET_SET_DATETIME
+
+	PET_SET_DATETIME = datetime(year=2002, day=17, month=3, hour=20)
+
+	await pet_set_rtc(47802)
+
+	time = await pet_retrieve_command(47802, pet_retrieve_rtc)
+	print(time)
+
+	return
 
 	demo_pkt = PetWFCDemoCmdPkt()
 	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_MOOD
@@ -591,9 +622,6 @@ async def main():
 	print(pets_in_area)
 #
 	#await pet_ble_set_personality(0xBABE, ppy_pkt)
-
-	#time = await pet_retrieve_command(0xBABE, pet_retrieve_rtc)
-	#print(time)
 
 if __name__ == "__main__":
 	asyncio.run(main())

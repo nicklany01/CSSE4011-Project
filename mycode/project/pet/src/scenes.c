@@ -315,7 +315,7 @@ void scenes_character_update()
 		target_face = sprite_2_mood_lookup[scenes_state.modifier_mood];
 		break;
 	default:
-		break;
+		return;
 	}
 
 	lv_image_set_src(character->base, sprite_base_lookup[scenes_state.current_sprite]);

@@ -61,9 +61,9 @@ pet_wfc_rtc_pkt_s pet_wfc_rtc_pkt = {
 	.month = 3,
 	.year = 102,
 
-	.hrs = 13,
-	.mins = 0,
-	.secs = 0
+	.hrs = 17,
+	.mins = 59,
+	.secs = 50
 };
 pet_wfc_weather_pkt_s pet_wfc_weather_pkt;
 
@@ -177,11 +177,19 @@ void update_personality() {
 	scenes_set_sprite(my_pet_ppy_pkt.sprite);
 }
 
-void comms_state_timeout(struct k_timer *timer) {
+uint16_t get_since_epoch() {
 
 	rtc_get_datetime(&time_state_container.tm_year, &time_state_container.tm_mon,
 		&time_state_container.tm_mday, &time_state_container.tm_hour,
 		&time_state_container.tm_min, &time_state_container.tm_sec);
+
+	time_t current = mktime(&time_state_container);
+	return (uint16_t)(current - epoch);
+}
+
+void comms_state_timeout(struct k_timer *timer) {
+
+	get_since_epoch();
 
 	// update the scene from the RTC
 	if (time_state_container.tm_hour < 6) {
@@ -214,16 +222,6 @@ void comms_state_timeout(struct k_timer *timer) {
 	os_uart_passthru(&uart_passthru_rx);
 
 	k_sem_give(&uart_srvc_lock);
-}
-
-uint16_t get_since_epoch() {
-
-	rtc_get_datetime(&time_state_container.tm_year, &time_state_container.tm_mon,
-		&time_state_container.tm_mday, &time_state_container.tm_hour,
-		&time_state_container.tm_min, &time_state_container.tm_sec);
-
-	time_t current = mktime(&time_state_container);
-	return (uint16_t)(current - epoch);
 }
 
 void process_ble_passthru_packet() {
