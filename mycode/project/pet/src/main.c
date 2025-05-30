@@ -570,7 +570,7 @@ int main() {
 		pet_wfc_rtc_pkt.mins, pet_wfc_rtc_pkt.secs);
 
 	mood_init();
-	//sound_init();
+	sound_init();
 	if (mpu6886_init()) {
 		return 2;
 	}
