@@ -146,6 +146,10 @@ void init_personality()
 {
 
 	// hwinfo_get_device_id((uint8_t *)pet_pex_id, sizeof(pex_uuid_t));
+	uint8_t device_id[2];
+	hwinfo_get_device_id(device_id, sizeof(device_id));
+	pet_pex_id = device_id[0] << 8 | device_id[1]; 
+	printf("Device ID: 0x%04X\n", pet_pex_id);
 
 	pet_pex_id = 0xBAB0;
 	my_pet_ppy_pkt.id = pet_pex_id;
