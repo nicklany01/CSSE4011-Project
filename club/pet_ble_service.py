@@ -38,6 +38,13 @@ GAME_EVT_WFC_RX_RTC = None
 
 GAME_RX_JOURNAL = {}
 
+def list_to_bytes(input_list):
+	barray = bytearray()
+	for i in input_list:
+		barray.append(i)
+
+	return barray
+
 class PetBLEAdvDataPos:
 	MF_ID_HIGH = 0
 	MF_ID_LOW = 1
@@ -256,13 +263,13 @@ class PetPEXStatePkt:
 	def __init__(self):
 
 		self.scene = 0
-		self.scene_weather = 0
-		self.scene_mood = 0
-		self.scene_time = 0
-		self.scene_temp = 0
+		self.happiness = 0
+		self.energy = 0
+		self.health = 0
+		self.interaction = 0
 
-		self.held_food = 0
-		self.held_drink = 0
+		self.expression = 0
+		self.affection = 0
 
 	def serialize(self):
 
@@ -270,12 +277,12 @@ class PetPEXStatePkt:
 		tx_bytes.append(PET_PKT_ID.PEX_STATE)
 
 		tx_bytes.append(self.scene)
-		tx_bytes.append(self.scene_weather)
-		tx_bytes.append(self.scene_mood)
-		tx_bytes.append(self.scene_time)
+		tx_bytes.append(self.happiness)
+		tx_bytes.append(self.energy)
+		tx_bytes.append(self.health)
 
-		tx_bytes.append(self.held_food)
-		tx_bytes.append(self.held_drink)
+		tx_bytes.append(self.expression)
+		tx_bytes.append(self.affection)
 
 		return tx_bytes
 
@@ -290,26 +297,26 @@ class PetPEXStatePkt:
 
 		self.scene = barray[offset]
 		offset += 1
-		self.scene_weather = barray[offset]
+		self.happiness = barray[offset]
 		offset += 1
-		self.scene_mood = barray[offset]
+		self.energy = barray[offset]
 		offset += 1
-		self.scene_time = barray[offset]
+		self.health = barray[offset]
 		offset += 1
-		self.scene_temp = barray[offset]
+		self.interaction = barray[offset]
 		offset += 1
 
-		self.held_food = barray[offset]
+		self.expression = barray[offset]
 		offset += 1
-		self.held_drink = barray[offset]
+		self.affection = barray[offset]
 		offset += 1
 
 	def __str__(self):
 
-		return f"""scene: {self.scene} weather: {self.scene_weather}
-mood: {self.scene_mood} time: {self.scene_time}
-temp: {self.scene_temp} held_food: {self.held_food}
-held_drink: {self.held_drink}"""
+		return f"""scene: {self.scene} happiness: {self.happiness}
+energy: {self.energy} health: {self.health}
+interaction: {self.interaction} expression: {self.expression}
+affection: {self.affection}"""
 
 class PetPEXJournalEvtPkt:
 	def __init__(self, entry=PetJournalEntry()):
@@ -428,6 +435,41 @@ async def find_ble_pet(pex_id):
 		return None
 
 	return sienna_devices[0]
+
+async def discover_moods():
+
+	print("Discovering moods...")
+
+	pex_packets = {}
+
+	devices = await BleakScanner.discover(timeout=3, return_adv=True)
+
+	for device in devices:
+
+		pkt_data = devices[device]
+
+		adv_data = pkt_data[1]
+		mf_data = adv_data.manufacturer_data
+
+		try:
+			pet_md = mf_data[BLE_SIENNA_MF_ID]
+			print(pet_md)
+		except KeyError:
+			continue
+
+		adv_pex_id = (pet_md[PET_BLE_ADV_POS.PEX_ID_HIGH] << 8) | pet_md[PET_BLE_ADV_POS.PEX_ID_LOW]
+
+		pex_packet = PetPEXStatePkt()
+		pex_packet.deserialize(pet_md[2:])
+
+		pex_packets[adv_pex_id] = pex_packet
+
+		print(f"Found pet device {adv_pex_id} {PET_BLE_ADV_POS.PEX_ID_HIGH}")
+
+	if len(pex_packets) == 0:
+		return None
+
+	return pex_packets
 
 async def pet_ble_retrieve_journal(client):
 
@@ -575,7 +617,6 @@ async def pet_set_rtc(pex_id):
 
 	await pet_send_packet(pex_id, rtc_set_pkt, BLE_UUID_CHR_WFC_TX)
 
-
 async def pet_ble_discover_pets():
 
 	return await find_ble_pet(SIENNA_MASTER_PEX)
@@ -583,6 +624,9 @@ async def pet_ble_discover_pets():
 async def main():
 
 	await pet_ble_init()
+
+	print(await discover_moods())
+	return
 
 	global PET_SET_DATETIME
 
