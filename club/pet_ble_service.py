@@ -568,20 +568,20 @@ async def main():
 	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_MOOD
 	demo_pkt.cmd_arg = 4
 
-	await pet_send_packet(0xBABE, demo_pkt, BLE_UUID_CHR_WFC_TX)
+	await pet_send_packet(0xBABA, demo_pkt, BLE_UUID_CHR_WFC_TX)
 
 	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_SCENE
 	demo_pkt.cmd_arg = 0
 
-	await pet_send_packet(0xBABE, demo_pkt, BLE_UUID_CHR_WFC_TX)
+	await pet_send_packet(0xBABA, demo_pkt, BLE_UUID_CHR_WFC_TX)
 
 	ppy_pkt = PetPPYPersonalityPkt()
 	ppy_pkt.randomize()
 
 	ppy_pkt.sprite = 0
-	await pet_ble_set_personality(0xBABE, ppy_pkt)
+	await pet_ble_set_personality(0xBABA, ppy_pkt)
 
-	pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
+	pet_journal = await pet_retrieve_command(0xBABA, pet_ble_retrieve_journal)
 
 	for pet in pet_journal:
 		print(f"JOURNAL OF PET {hex(pet)}")

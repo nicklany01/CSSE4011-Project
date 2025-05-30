@@ -285,6 +285,8 @@ static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
 
 						pet_wfc_demo_pkt.cmd_id = PET_WFC_CMD_CLOSE_CONN;
 						pet_wfc_demo_pkt.cmd_arg = 0;
+						targeting = 0;
+						printf("Goodbye M5!\r\n");
 
 						uart_passthru_tx.len = serialize_pet_wfc_demo_cmd_pkt(
 							&pet_wfc_demo_pkt, uart_passthru_tx.buff);

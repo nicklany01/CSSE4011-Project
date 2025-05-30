@@ -32,8 +32,7 @@
 		group1 {
 			pinmux = <UART1_TX_GPIO32>,
 					 <UART1_RX_GPIO33>;
-
-			bias-pull-up;
+			bias-disable;
 		};
 	};
 
