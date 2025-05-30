@@ -99,14 +99,16 @@ typedef enum
 	TEMP_MAX
 } mod_temp_e;
 
-typedef struct {
+typedef struct
+{
 
 	pex_uuid_t pex_id;
 	sprite_s sprite;
 	lv_obj_t *mini;
 } mini_register_obj_s;
 
-typedef struct {
+typedef struct
+{
 
 	int64_t last_rx;
 	pex_uuid_t pex_id;
@@ -114,7 +116,8 @@ typedef struct {
 	sprite_s sprite;
 } mini_timeout_counter_s;
 
-typedef struct {
+typedef struct
+{
 	lv_obj_t *base;
 	lv_obj_t *face;
 	lv_obj_t *anger;

@@ -188,25 +188,48 @@ void comms_state_timeout(struct k_timer *timer) {
 		return;
 	}
 
-	struct mood_state local_copy;
-	if (k_mutex_lock(&mood_mutex, K_MSEC(100)) == 0)
+	mod_mood_e mapped_mood = MOD_MOOD_NEUTRAL;
+	switch (pet_mood.expression)
 	{
-		memcpy(&local_copy, &pet_mood, sizeof(local_copy));
-		k_mutex_unlock(&mood_mutex);
+	case EXPRESSION_ENLIGHTENED:
+		mapped_mood = MOD_MOOD_HAPPY;
+		break;
+	case EXPRESSION_V_HAPPY:
+		mapped_mood = MOD_MOOD_HAPPY;
+		break;
+	case EXPRESSION_HAPPY:
+		mapped_mood = MOD_MOOD_HAPPY;
+		break;
+	case EXPRESSION_NEUTRAL:
+		mapped_mood = MOD_MOOD_NEUTRAL;
+		break;
+	case EXPRESSION_SAD:
+		mapped_mood = MOD_MOOD_SAD;
+		break;
+	case EXPRESSION_V_SAD:
+		mapped_mood = MOD_MOOD_SAD;
+		break;
+	case EXPRESSION_ANGRY:
+		mapped_mood = MOD_MOOD_ANGRY;
+		break;
+	case EXPRESSION_SLEEPY:
+		mapped_mood = MOD_MOOD_SLEEPY;
+		break;
+	default:
+		mapped_mood = MOD_MOOD_NEUTRAL;
+		break;
 	}
-	else
-	{
-		return;
-	}
+	scenes_set_mood(mapped_mood);
 
 	pex_state_pkt.scene = scenes_state.main_scene;
-	pex_state_pkt.scene_weather = local_copy.happiness;
-	pex_state_pkt.scene_mood = local_copy.energy;
-	pex_state_pkt.scene_time = local_copy.health;
-	pex_state_pkt.scene_temp = local_copy.interaction;
 
-	pex_state_pkt.held_drink = local_copy.expression;
-	pex_state_pkt.held_food = local_copy.affection;
+	pex_state_pkt.scene_weather = pet_mood.happiness;
+	pex_state_pkt.scene_mood = pet_mood.energy;
+	pex_state_pkt.scene_time = pet_mood.health;
+	pex_state_pkt.scene_temp = pet_mood.interaction;
+
+	pex_state_pkt.held_drink = pet_mood.expression;
+	pex_state_pkt.held_food = pet_mood.affection;
 
 	uart_passthru_rx.len = serialize_pet_exchange_state_pkt(&pex_state_pkt, uart_passthru_rx.buff);
 	os_uart_passthru(&uart_passthru_rx);
