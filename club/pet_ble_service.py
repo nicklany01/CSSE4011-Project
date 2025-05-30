@@ -625,16 +625,16 @@ async def main():
 
 	await pet_ble_init()
 
-	print(await discover_moods())
-	return
+	#print(await discover_moods())
+	#return
 
 	global PET_SET_DATETIME
 
 	PET_SET_DATETIME = datetime(year=2002, day=17, month=3, hour=20)
 
-	await pet_set_rtc(47802)
+	await pet_set_rtc(47792)
 
-	time = await pet_retrieve_command(47802, pet_retrieve_rtc)
+	time = await pet_retrieve_command(47792, pet_retrieve_rtc)
 	print(time)
 
 	return

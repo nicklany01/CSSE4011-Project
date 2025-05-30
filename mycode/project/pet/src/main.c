@@ -189,19 +189,6 @@ uint16_t get_since_epoch() {
 
 void comms_state_timeout(struct k_timer *timer) {
 
-	get_since_epoch();
-
-	// update the scene from the RTC
-	if (time_state_container.tm_hour < 6) {
-		scenes_set_time(MOD_TIME_NIGHT);
-	} else if (time_state_container.tm_hour < 12) {
-		scenes_set_time(MOD_TIME_MORNING);
-	} else if (time_state_container.tm_hour < 18) {
-		scenes_set_time(MOD_TIME_AFTERNOON);
-	} else if (time_state_container.tm_hour < 24) {
-		scenes_set_time(MOD_TIME_NIGHT);
-	}
-
 	if (timer == NULL || k_sem_take(&uart_srvc_lock, K_NO_WAIT)) {
 		return;
 	}
@@ -630,6 +617,19 @@ int main() {
 		// screen refresh 2Hz
 		scenes_draw();
 		k_sleep(K_MSEC(100));
+
+		get_since_epoch();
+
+		// update the scene from the RTC
+		if (time_state_container.tm_hour < 6) {
+			scenes_set_time(MOD_TIME_NIGHT);
+		} else if (time_state_container.tm_hour < 12) {
+			scenes_set_time(MOD_TIME_MORNING);
+		} else if (time_state_container.tm_hour < 18) {
+			scenes_set_time(MOD_TIME_AFTERNOON);
+		} else if (time_state_container.tm_hour < 24) {
+			scenes_set_time(MOD_TIME_NIGHT);
+		}
 
 		if (shake_state.rendered > 0) {
 			shake_state.rendered += 1;
