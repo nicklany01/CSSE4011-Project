@@ -1,7 +1,7 @@
 {
     "id": 47802,
     "name": "BABA",
-    "sprite": 1,
+    "sprite": 0,
     "expression": 3,
     "energy_threshold": 450,
     "health_threshold": 500,
@@ -31,5 +31,14 @@
     "enemies": [
         2
     ],
-    "journal": []
+    "journal": [
+        [
+            0,
+            0
+        ],
+        [
+            0,
+            0
+        ]
+    ]
 }

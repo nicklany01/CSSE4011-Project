@@ -250,10 +250,22 @@ class Pet():
 		for pet_id in pet_journals:
 			print(f"JOURNAL OF PET {hex(pet_id)}")
 			print(pet_journals[pet_id])
+
 			for pet in pets:
 				if pet.id == pet_id:
-					pet.journal = pet_journals[pet_id]
-					break
+					self.journal = ble.PetJournal()
+					journal_times = []
+
+					for entry in pet_journals[pet_id].entries:
+						if entry.timestamp not in journal_times:
+							journal_times.append(entry.timestamp)
+							self.journal.add(entry)
+
+
+			# for pet in pets:
+			# 	if pet.id == pet_id:
+			# 		pet.journal = pet_journals[pet_id]
+			# 		break
 	
 
 	async def ble_update_personality(self):
