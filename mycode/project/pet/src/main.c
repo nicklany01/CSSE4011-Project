@@ -179,7 +179,22 @@ void update_personality() {
 
 void comms_state_timeout(struct k_timer *timer) {
 
-	if (k_sem_take(&uart_srvc_lock, K_NO_WAIT)) {
+	rtc_get_datetime(&time_state_container.tm_year, &time_state_container.tm_mon,
+		&time_state_container.tm_mday, &time_state_container.tm_hour,
+		&time_state_container.tm_min, &time_state_container.tm_sec);
+
+	// update the scene from the RTC
+	if (time_state_container.tm_hour < 6) {
+		scenes_set_time(MOD_TIME_NIGHT);
+	} else if (time_state_container.tm_hour < 12) {
+		scenes_set_time(MOD_TIME_MORNING);
+	} else if (time_state_container.tm_hour < 18) {
+		scenes_set_time(MOD_TIME_AFTERNOON);
+	} else if (time_state_container.tm_hour < 24) {
+		scenes_set_time(MOD_TIME_NIGHT);
+	}
+
+	if (timer == NULL || k_sem_take(&uart_srvc_lock, K_NO_WAIT)) {
 		return;
 	}
 
@@ -576,6 +591,7 @@ int main() {
 	);
 
 	scenes_init();
+	comms_state_timeout(NULL); //should set the daynight cycle properly
 	scenes_draw();
 
 	display_blanking_off(display_dev);
