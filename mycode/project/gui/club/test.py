@@ -3,11 +3,13 @@ import copy
 
 from random import randint
 from datetime import datetime
+import time
 
 from bleak import BleakScanner, BleakClient
 
 from pet_app_helpers import PET_WFC_DEMO_CMDS, SPRITE, PET_PKT_ID, PET_BLE_ADV_POS, \
 	PetJournalEntry, PetJournal
+
 
 BLE_SIENNA_MF_ID = 0x6943
 SIENNA_MASTER_PEX = 0x4369
@@ -64,7 +66,7 @@ class PetWFCDemoCmdPkt:
 
 		tx_bytes.append(self.cmd_id)
 		e_u16(self.cmd_arg, tx_bytes)
-
+		
 		return tx_bytes
 
 	def __str__(self):
@@ -469,14 +471,11 @@ async def pet_retrieve_rtc(client):
 
 async def pet_retrieve_command(pex_id, command):
 
-	while True:
+	pet = await find_ble_pet(pex_id)
 
-		pet = await find_ble_pet(pex_id)
-
-		if pet is None:
-			continue
-
-		break
+	if pet is None:
+		print("Unable to find pet")
+		return
 
 	print("Found pet!")
 
@@ -489,17 +488,18 @@ async def pet_retrieve_command(pex_id, command):
 		return await command(client)
 
 async def pet_send_packet(pex_id, packet, uuid):
-
+	
+	start_time = time.time()
 	while True:
-
 		pet = await find_ble_pet(pex_id)
 
 		if pet is None:
+			if (time.time() - start_time) > 10:
+				return
 			continue
 
+		print("Found pet!")
 		break
-
-	print("Found pet!")
 
 	async with BleakClient(pet) as client:
 
@@ -509,12 +509,38 @@ async def pet_send_packet(pex_id, packet, uuid):
 
 		await client.write_gatt_char(uuid, packet.serialize(), response=False)
 
-async def pet_ble_set_personality(pex_id, ppy_pkt):
 
+
+async def pet_ble_set_personality(pex_id, ppy_pkt):
+	await pet_ble_init()
 	await pet_send_packet(pex_id, ppy_pkt, BLE_UUID_CHR_PPY_TX)
 
-async def pet_ble_discover_pets():
+async def pet_ble_set_state(pex_id, state_pkt: PetPEXStatePkt):
+	await pet_ble_init()
 
+	demo_pkt = PetWFCDemoCmdPkt()
+
+	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_SCENE
+	demo_pkt.cmd_arg = state_pkt.scene
+	await pet_send_packet(pex_id, demo_pkt, BLE_UUID_CHR_WFC_TX)
+
+	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_MOOD
+	demo_pkt.cmd_arg = state_pkt.scene_mood
+	await pet_send_packet(pex_id, demo_pkt, BLE_UUID_CHR_WFC_TX)
+
+	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_TIME
+	demo_pkt.cmd_arg = state_pkt.scene_time
+	await pet_send_packet(pex_id, demo_pkt, BLE_UUID_CHR_WFC_TX)
+
+	# await pet_send_packet(pex_id, state_pkt, BLE_UUID_CHR_PEX_TX)
+
+async def pet_ble_update_relationship(pex_id, relation_pkts):
+	await pet_ble_init()
+	for pkt in relation_pkts:
+		await pet_send_packet(pex_id, pkt, BLE_UUID_CHR_WFC_TX)
+
+async def pet_ble_discover_pets():
+	await pet_ble_init()
 	return await find_ble_pet(SIENNA_MASTER_PEX)
 
 async def main():
@@ -524,27 +550,28 @@ async def main():
 	# demo_pkt = PetWFCDemoCmdPkt()
 	# demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_MOOD
 	# demo_pkt.cmd_arg = 4
+	# await pet_send_packet(0xBABA, demo_pkt, BLE_UUID_CHR_WFC_TX)
+	# demo_pkt.cmd_arg = 0
+	# await pet_send_packet(0xBABA, demo_pkt, BLE_UUID_CHR_WFC_TX)
 
-	# await pet_send_packet(0xBABE, demo_pkt, BLE_UUID_CHR_WFC_TX)
+	# ppy_pkt = PetPPYPersonalityPkt()
+	# ppy_pkt.randomize()
 
-	ppy_pkt = PetPPYPersonalityPkt()
-	ppy_pkt.randomize()
+	# ppy_pkt.sprite = 2
+	# await pet_ble_set_personality(0xBABA, ppy_pkt)
 
-	ppy_pkt.sprite = 2
-	await pet_ble_set_personality(0xBABE, ppy_pkt)
+	pet_journal = await pet_retrieve_command(0xBABA, pet_ble_retrieve_journal)
 
-	# pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
-
-	# for pet in pet_journal:
-	# 	print(f"JOURNAL OF PET {hex(pet)}")
-	# 	print(pet_journal[pet])
+	for pet in pet_journal:
+		print(f"JOURNAL OF PET {hex(pet)}")
+		print(pet_journal[pet])
 
 	# pets_in_area = await pet_ble_discover_pets()
 	# print(pets_in_area)
 #
-	#await pet_ble_set_personality(0xBABE, ppy_pkt)
+	#await pet_ble_set_personality(0xBABA, ppy_pkt)
 
-	#time = await pet_retrieve_command(0xBABE, pet_retrieve_rtc)
+	#time = await pet_retrieve_command(0xBABA, pet_retrieve_rtc)
 	#print(time)
 
 if __name__ == "__main__":

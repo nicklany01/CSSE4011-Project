@@ -56,8 +56,6 @@ class GUIWindow(tk.Tk):
             screen = screens.homepage.HomeScreen(self)
         elif frame_index == config.FRAME_PET_CONFIG:
             screen = screens.pet_page.PetPage(self)
-        elif frame_index == config.FRAME_COMMUNITY_JOURNAL:
-            screen = screens.homepage.HomeScreen(self)
         else:
             screen = screens.homepage.HomeScreen(self)
         

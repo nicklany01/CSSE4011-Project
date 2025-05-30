@@ -101,11 +101,11 @@ class Pet():
 				self.enemies.append(enemy)
 
 			self.journal: club.pet_app_helpers.PetJournal = club.pet_app_helpers.PetJournal()
-			journal_entry = club.pet_app_helpers.PetJournalEntry()
-			for time, event in pet_config["journal"]:
-				journal_entry.timestamp = time
-				journal_entry.event = event
-				self.journal.add(journal_entry)
+			# journal_entry = club.pet_app_helpers.PetJournalEntry()
+			# for time, event in pet_config["journal"]:
+			# 	journal_entry.timestamp = time
+			# 	journal_entry.event = event
+			# 	self.journal.add(journal_entry)
 
 		except Exception as e:
 			print(f"Error: Could not properly load pet from '{file_path}': {e}")
@@ -275,6 +275,7 @@ class Pet():
 
 	
 	def send_personality(self):
+		print("Sending pet personality...")
 		ppy_pkt = ble.PetPPYPersonalityPkt()
 		ppy_pkt.randomize()
 
@@ -316,7 +317,7 @@ class Pet():
 
 	def send_relationships(self, current_friends: list[int], new_friends: list[int], 
 						current_enemies: list[int], new_enemies: list[int]):
-		print("Updating relationships")
+		print("Updating relationships...")
 
 		add_friends = []
 		remove_friends = []

@@ -1,9 +1,9 @@
 {
-    "id": 0,
-    "name": "Matt",
-    "sprite": 0,
-    "expression": 0,
-    "energy_threshold": 500,
+    "id": 66,
+    "name": "Nic",
+    "sprite": 2,
+    "expression": 3,
+    "energy_threshold": 450,
     "health_threshold": 500,
     "interation_threshold": 500,
     "mood": {
@@ -14,20 +14,22 @@
         "interaction": 500
     },
     "favourites": {
-        "scene": 1,
+        "scene": 0,
         "time": 0,
         "weather": 0,
-        "food": 1,
-        "drink": 3
+        "food": 0,
+        "drink": 0
     },
     "scene": {
         "scene": 0,
-        "weather": 2,
         "time": 3,
+        "weather": 2,
         "food": 0,
         "drink": 0
     },
     "friends": [],
-    "enemies": [],
+    "enemies": [
+        2
+    ],
     "journal": []
 }
