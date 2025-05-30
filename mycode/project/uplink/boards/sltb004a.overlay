@@ -12,4 +12,28 @@
 
 };
 
+  compatible = "silabs,sltb004a";
 
+  aliases
+  {
+    u1 = &leuart0;
+  };
+
+  chosen {
+    zephyr,console = &usart0;
+    zephyr,shell-uart = &usart0;
+    zephyr,bt-c2h-uart = &usart0;
+    zephyr,bt-hci = &bt_hci_silabs;
+  };
+};
+
+&leuart0
+{
+  status = "okay";
+  current-speed = <115200>;
+};
+
+&bt_hci_silabs
+{
+  status = "okay";
+};

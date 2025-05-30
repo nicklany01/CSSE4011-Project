@@ -144,7 +144,18 @@ bool deserialize_pet_exchange_journal_evt_pkt(pet_exchange_journal_evt_pkt_s *pk
 	return true;
 }
 
-// serialize not needed for WFC since it's one way
+int serialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer) {
+
+	int offset = 1;
+
+	buffer[0] = PET_PKT_WFC_DEMO_COMMAND;
+
+	buffer[offset++] = pkt->cmd_id;
+	e_u16(pkt->cmd_arg, buffer + offset);
+	offset += sizeof(pkt->cmd_arg);
+
+	return offset;
+}
 
 bool deserialize_pet_wfc_demo_cmd_pkt(pet_wfc_pkt_demo_cmd_s *pkt, uint8_t *buffer) {
 

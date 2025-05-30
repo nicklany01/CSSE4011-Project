@@ -40,12 +40,12 @@ mf_data = [
 	pet_ble_service.MF_ID_LOW,
 	0x00,
 	0x00,
-	0x00,
-	0x00,
-	0x00,
-	0x00,
-	0x00,
-	0x00,
+	0x02,
+	0x03,
+	0x03,
+	0x03,
+	0x03,
+	0x03,
 	0x00,
 	0x00,
 ]
@@ -131,7 +131,7 @@ async def adv_start(bus, prev_adv: Advertisement):
 		"sienna-upl",
 		[],
 		0,
-		2,
+		20,
 		manufacturerData={pet_ble_service.BLE_SIENNA_MF_ID: list_to_bytes(mf_data)}
 	)
 
@@ -199,7 +199,7 @@ async def main():
 	service_collection.add_service(pet_ppy_service)
 	service_collection.add_service(pet_wfc_service)
 
-	adv_set_pex_id(0xBABE)
+	adv_set_pex_id(0xBAEE)
 	adv_set_sprite(pet_app_helpers.SPRITE.CHERRY)
 
 	bus = await get_message_bus()
@@ -234,7 +234,7 @@ async def main():
 			logger.info("Starting advertise...")
 
 			advert = await adv_start(bus, advert)
-			await asyncio.sleep(2)
+			await asyncio.sleep(20)
 
 			if UPLINK_STATE == UplinkState.ADVERTISE:
 				UPLINK_STATE = UplinkState.SCAN
@@ -263,11 +263,11 @@ async def main():
 
 if __name__ == "__main__":
 
-	PET_PORT = serial.Serial(
-		port=sys.argv[1],
-		baudrate=115200,
-		timeout=1
-	)
+	#PET_PORT = serial.Serial(
+	#	port=sys.argv[1],
+	#	baudrate=115200,
+	#	timeout=1
+	#)
 
 	uart_handler = threading.Thread(target=uart_handler_thread, daemon=True)
 	uart_handler.start()

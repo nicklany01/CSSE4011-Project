@@ -15,6 +15,7 @@
 // misc
 extern const lv_image_dsc_t pizza;
 extern const lv_image_dsc_t anger;
+extern const lv_image_dsc_t pet_wfc;
 
 // scene backgrounds
 extern const lv_image_dsc_t scene_forest_day;
@@ -27,6 +28,9 @@ extern const lv_image_dsc_t scene_beach_day;
 extern const lv_image_dsc_t scene_beach_night;
 
 extern const lv_image_dsc_t scene_shop_day;
+
+extern const lv_image_dsc_t scene_city_day;
+extern const lv_image_dsc_t scene_city_night;
 
 // character sprites
 extern const lv_image_dsc_t sprite_base;

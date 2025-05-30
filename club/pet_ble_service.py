@@ -463,6 +463,10 @@ def pet_ble_pex_notify_cb(characteristic, data):
 		journal_evt_pkt = PetPEXJournalEvtPkt()
 		journal_evt_pkt.deserialize(data)
 
+		if journal_evt_pkt.index == JOURNAL_FINISHED_MAGIC_NUM:
+			GAME_EVT_PEX_RX_JOURNAL.set()
+			return
+
 		try:
 			GAME_RX_JOURNAL[journal_evt_pkt.pet_id]
 		except KeyError:
@@ -470,9 +474,6 @@ def pet_ble_pex_notify_cb(characteristic, data):
 			GAME_RX_JOURNAL[journal_evt_pkt.pet_id].epoch = BLE_PKT_WFC_RTC_RX.to_date()
 
 		GAME_RX_JOURNAL[journal_evt_pkt.pet_id].add(journal_evt_pkt.entry)
-
-		if journal_evt_pkt.index == JOURNAL_FINISHED_MAGIC_NUM:
-			GAME_EVT_PEX_RX_JOURNAL.set()
 
 def pet_ble_ppy_notify_cb(characteristic, data):
 

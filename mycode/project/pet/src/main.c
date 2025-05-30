@@ -107,6 +107,8 @@ typedef struct {
 	int rendered;
 } shake_state_s;
 
+pex_uuid_t close_mate = 0x0000;
+
 #define ACCEL_POLL_PERIOD 500
 
 #define SHAKE_MAGNITUDE_THRESH 3
@@ -147,7 +149,7 @@ void init_personality() {
 
 	//hwinfo_get_device_id((uint8_t *)pet_pex_id, sizeof(pex_uuid_t));
 
-	pet_pex_id = 0xBABE;
+	pet_pex_id = 0xBAB0;
 	my_pet_ppy_pkt.id = pet_pex_id;
 	my_pet_ppy_pkt.sprite = their_pet_ppy_pkt.sprite;
 
@@ -177,7 +179,22 @@ void update_personality() {
 
 void comms_state_timeout(struct k_timer *timer) {
 
-	if (k_sem_take(&uart_srvc_lock, K_NO_WAIT)) {
+	rtc_get_datetime(&time_state_container.tm_year, &time_state_container.tm_mon,
+		&time_state_container.tm_mday, &time_state_container.tm_hour,
+		&time_state_container.tm_min, &time_state_container.tm_sec);
+
+	// update the scene from the RTC
+	if (time_state_container.tm_hour < 6) {
+		scenes_set_time(MOD_TIME_NIGHT);
+	} else if (time_state_container.tm_hour < 12) {
+		scenes_set_time(MOD_TIME_MORNING);
+	} else if (time_state_container.tm_hour < 18) {
+		scenes_set_time(MOD_TIME_AFTERNOON);
+	} else if (time_state_container.tm_hour < 24) {
+		scenes_set_time(MOD_TIME_NIGHT);
+	}
+
+	if (timer == NULL || k_sem_take(&uart_srvc_lock, K_NO_WAIT)) {
 		return;
 	}
 
@@ -266,6 +283,13 @@ void process_ble_passthru_packet() {
 					k_sem_give(&uart_srvc_lock);
 					break;
 
+				case PET_WFC_CMD_INIT_CONN:
+					scenes_show_wfc_icon(true);
+					break;
+				case PET_WFC_CMD_CLOSE_CONN:
+					scenes_show_wfc_icon(false);
+					break;
+
 				default:
 					break;
 			}
@@ -318,9 +342,7 @@ void process_ble_passthru_packet() {
 
 				for (int i = 0; i < to_tx; i++) {
 
-					my_pex_journal_evt_pkt.index = i == (to_tx - 1)
-						? JOURNAL_FINISHED_MAGIC_NUM
-						: i;
+					my_pex_journal_evt_pkt.index = i;
 
 					my_pex_journal_evt_pkt.id = pet_pex_id;
 
@@ -336,8 +358,33 @@ void process_ble_passthru_packet() {
 					k_sleep(K_MSEC(UART_JOURNAL_TX_COOLDOWN));
 				}
 
-				k_sem_give(&uart_srvc_lock);
+				journal_entry_s *entry;
 
+				for (int i = 0; i < journal_idx_partner; i++) {
+					for (int j = 0; j < journal_partner_idx_lut[i]; j++) {
+						entry = &journal_partner[i][j];
+
+						my_pex_journal_evt_pkt.index = j;
+						my_pex_journal_evt_pkt.id = journal_partner_lut[i];
+
+						journal_dupe_entry(&my_pex_journal_evt_pkt.entry, entry);
+
+						uart_passthru_tx.len = serialize_pet_exchange_journal_evt_pkt(
+						&my_pex_journal_evt_pkt,  uart_passthru_tx.buff);
+
+						os_uart_passthru(&uart_passthru_tx);
+
+						k_sleep(K_MSEC(UART_JOURNAL_TX_COOLDOWN));
+					}
+				}
+
+				my_pex_journal_evt_pkt.index = JOURNAL_FINISHED_MAGIC_NUM;
+
+				uart_passthru_tx.len = serialize_pet_exchange_journal_evt_pkt(
+					&my_pex_journal_evt_pkt,  uart_passthru_tx.buff);
+
+				os_uart_passthru(&uart_passthru_tx);
+				k_sem_give(&uart_srvc_lock);
 				break;
 			}
 
@@ -443,6 +490,11 @@ static void thread_game_handler(void *a, void *b, void *c) {
 				default:
 					break;
 			}
+
+			if (pet_uart_srvc_rssi_pkt.rssi > -60) {
+				scenes_allow_wfc();
+				close_mate = pet_uart_srvc_rssi_pkt.id;
+			}
 		}
 
 		if (game_events & GAME_EVT_RTC_UPDATED) {
@@ -539,7 +591,7 @@ int main() {
 
 	k_event_init(&game_event_block);
 
-	friends_add_friend(0xBAB0);
+	friends_add_friend(0xBABA);
 
 	tid_uart_handler = k_thread_create(
 		&thread_uart_handler_data,
@@ -569,6 +621,7 @@ int main() {
 	);
 
 	scenes_init();
+	comms_state_timeout(NULL); //should set the daynight cycle properly
 	scenes_draw();
 
 	display_blanking_off(display_dev);
@@ -578,7 +631,7 @@ int main() {
 		// main thread's only job is
 		// screen refresh 2Hz
 		scenes_draw();
-		k_sleep(K_MSEC(500));
+		k_sleep(K_MSEC(100));
 
 		if (shake_state.rendered > 0) {
 			shake_state.rendered += 1;
@@ -589,6 +642,19 @@ int main() {
 			scenes_toggle_sick();
 			shake_state.count = 0;
 			shake_state.rendered = 0;
+		}
+
+		if (scenes_state.do_wfc) {
+			pet_wfc_demo_pkt.cmd_id = PET_WFC_CMD_INIT_CONN;
+			pet_wfc_demo_pkt.cmd_arg = close_mate;
+
+
+			uart_passthru_tx.len = serialize_pet_wfc_demo_cmd_pkt(
+				&pet_wfc_demo_pkt,  uart_passthru_tx.buff);
+			os_uart_passthru(&uart_passthru_tx);
+
+			scenes_state.do_wfc = false;
+
 		}
 	}
 }
