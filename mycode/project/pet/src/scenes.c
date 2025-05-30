@@ -3,6 +3,7 @@
 #include "gfx_assets.h"
 #include "mood.h"
 #include <zephyr/logging/log.h>
+#include "sound.h"
 
 LOG_MODULE_REGISTER(scenes, CONFIG_LOG_DEFAULT_LEVEL);
 
@@ -103,10 +104,49 @@ static void stats_button_cb(lv_event_t *e)
 	}
 }
 
+static void feed_button_cb(lv_event_t *e)
+{
+	ARG_UNUSED(e);
+
+	if (k_mutex_lock(&mood_mutex, K_MSEC(100))) {
+		LOG_WRN("Couldn't acquire mood mutex for feeding");
+		return;
+    }
+    
+    // Increase energy and cap at max value
+    pet_mood.energy = MIN(pet_mood.energy + 100, MAX_STATE_VALUE);
+    k_mutex_unlock(&mood_mutex);
+    
+    LOG_INF("Fed pet! Energy: %d", pet_mood.energy);
+    sound_play();
+    
+    // Update displays
+    if (scenes_state.stats_visible) {
+		scenes_update_stats_display();
+    }
+    scenes_character_update();
+}
+
+void scenes_create_feed_button(lv_obj_t *parent)
+{
+	lv_obj_t *btn = lv_button_create(parent);
+	lv_obj_set_size(btn, 100, 40);
+	lv_obj_align(btn, LV_ALIGN_BOTTOM_MID, 0, -10);
+
+	lv_obj_t *btn_label = lv_label_create(btn);
+	lv_label_set_text(btn_label, "Feed Me!");
+	lv_obj_center(btn_label);
+
+	lv_obj_add_event_cb(btn, feed_button_cb, LV_EVENT_CLICKED, NULL);
+
+	// Add debouncing to prevent rapid clicks
+	lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICK_FOCUSABLE);
+}
+
 void scenes_create_scene_switch_button(lv_obj_t *parent)
 {
 	lv_obj_t *btn = lv_button_create(parent);
-	lv_obj_set_size(btn, 100, 50);
+	lv_obj_set_size(btn, 100, 40);
 	lv_obj_align(btn, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
 	lv_obj_t *label = lv_label_create(btn);
 	lv_label_set_text(label, "Next Scene");
@@ -117,7 +157,7 @@ void scenes_create_scene_switch_button(lv_obj_t *parent)
 void scenes_create_stats_button(lv_obj_t *parent)
 {
 	lv_obj_t *btn = lv_button_create(parent);
-	lv_obj_set_size(btn, 80, 40);
+	lv_obj_set_size(btn, 100, 40);
 	lv_obj_align(btn, LV_ALIGN_BOTTOM_LEFT, 10, -10);
 	lv_obj_t *label = lv_label_create(btn);
 	lv_label_set_text(label, "Stats");
@@ -167,8 +207,8 @@ void scenes_create_stats_screen()
 		// Update the mood display initially
 		scenes_update_stats_display();
 
-		// Add stats button to go back
 		scenes_create_stats_button(scenes_state.stats_screen);
+		scenes_create_feed_button(scenes_state.stats_screen);
 	}
 }
 
@@ -364,6 +404,7 @@ void scenes_forest_init()
 	lv_obj_set_pos(scene_forest.background, 0, 0);
 	scenes_create_scene_switch_button(scene_forest.screen);
 	scenes_create_stats_button(scene_forest.screen);
+	scenes_create_feed_button(scene_forest.screen);
 }
 
 void scenes_meadow_init()
@@ -373,6 +414,7 @@ void scenes_meadow_init()
 	lv_obj_set_pos(scene_meadow.background, 0, 0);
 	scenes_create_scene_switch_button(scene_meadow.screen);
 	scenes_create_stats_button(scene_meadow.screen);
+	scenes_create_feed_button(scene_meadow.screen);
 }
 
 void scenes_beach_init()
@@ -382,6 +424,7 @@ void scenes_beach_init()
 	lv_obj_set_pos(scene_beach.background, 0, 0);
 	scenes_create_scene_switch_button(scene_beach.screen);
 	scenes_create_stats_button(scene_beach.screen);
+	scenes_create_feed_button(scene_beach.screen);
 }
 
 void scenes_shop_init()
@@ -391,6 +434,7 @@ void scenes_shop_init()
 	lv_obj_set_pos(scene_shop.background, 0, 0);
 	scenes_create_scene_switch_button(scene_shop.screen);
 	scenes_create_stats_button(scene_shop.screen);
+	scenes_create_feed_button(scene_shop.screen);
 }
 
 void scenes_city_init()
@@ -400,6 +444,7 @@ void scenes_city_init()
 	lv_obj_set_pos(scene_city.background, 0, 0);
 	scenes_create_scene_switch_button(scene_city.screen);
 	scenes_create_stats_button(scene_city.screen);
+	scenes_create_feed_button(scene_city.screen);
 }
 
 void scenes_forest_update()
