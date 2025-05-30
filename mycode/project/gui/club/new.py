@@ -625,7 +625,8 @@ async def main():
 
 	await pet_ble_init()
 
-	print(await discover_moods())
+	moods = await discover_moods()
+	print(moods[47792])
 	return
 
 	global PET_SET_DATETIME

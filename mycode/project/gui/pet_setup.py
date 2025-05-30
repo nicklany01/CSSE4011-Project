@@ -266,24 +266,6 @@ class Pet():
 			# 	if pet.id == pet_id:
 			# 		pet.journal = pet_journals[pet_id]
 			# 		break
-	
-
-	async def ble_update_personality(self):
-		await ble.pet_ble_init()
-
-		print(f"Getting personality for {hex(self.id)}")
-		personality = await ble.pet_retrieve_command(self.id, ble.pet_ble_retrieve_personality)
-
-		if personality is None:
-			print(f"Couldn't find personality for {hex(self.id)}")
-			return
-		
-		self.mood.affection = personality.affection
-		self.mood.happiness = personality.happiness
-		self.mood.energy = personality.energy
-		self.mood.health = personality.health
-		self.mood.interaction = personality.interaction
-		self.expression = personality.expression
 
 	
 	def send_personality(self):

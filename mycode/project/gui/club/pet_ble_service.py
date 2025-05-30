@@ -440,7 +440,8 @@ async def find_ble_pet(pex_id):
 	return sienna_devices[0]
 
 async def discover_moods():
-
+	await pet_ble_init()
+	
 	print("Discovering moods...")
 
 	pex_packets = {}
@@ -636,11 +637,11 @@ async def pet_ble_set_state(pex_id, scene_info: list[int]):
 			demo_pkt.cmd_arg = scene_info[0]
 			await pet_send_packet(pex_id, demo_pkt, BLE_UUID_CHR_WFC_TX)
 
-			# print("trying to change time")
-			# demo_pkt = PetWFCDemoCmdPkt()
-			# demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_TIME
-			# demo_pkt.cmd_arg = scene_info[2]
-			# await pet_send_packet(pex_id, demo_pkt, BLE_UUID_CHR_WFC_TX)
+			print("trying to change time")
+			demo_pkt = PetWFCDemoCmdPkt()
+			demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_TIME
+			demo_pkt.cmd_arg = scene_info[2]
+			await pet_send_packet(pex_id, demo_pkt, BLE_UUID_CHR_WFC_TX)
 
 			success = True
 		except Exception:
@@ -688,16 +689,15 @@ async def main():
 	#print(time)
 
 	print(await discover_moods())
-	return
 
-	global PET_SET_DATETIME
+	# global PET_SET_DATETIME
 
-	PET_SET_DATETIME = datetime(year=2002, day=17, month=3, hour=20)
+	# PET_SET_DATETIME = datetime(year=2002, day=17, month=3, hour=20)
 
-	await pet_set_rtc(47802)
+	# await pet_set_rtc(47802)
 
-	time = await pet_retrieve_command(47802, pet_retrieve_rtc)
-	print(time)
+	# time = await pet_retrieve_command(47802, pet_retrieve_rtc)
+	# print(time)
 
 	return
 

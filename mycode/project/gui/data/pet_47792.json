@@ -2,16 +2,16 @@
     "id": 47792,
     "name": "BABO",
     "sprite": 0,
-    "expression": 0,
+    "expression": 3,
     "energy_threshold": 500,
     "health_threshold": 500,
     "interation_threshold": 500,
     "mood": {
-        "affection": 500,
-        "happiness": 500,
-        "energy": 500,
-        "health": 500,
-        "interaction": 500
+        "affection": 6,
+        "happiness": 0,
+        "energy": 0,
+        "health": 0,
+        "interaction": 0
     },
     "favourites": {
         "scene": 1,
