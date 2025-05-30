@@ -13,6 +13,7 @@ int journal_idx = 0;
 
 pex_uuid_t current_partner = 0;
 int current_partner_idx = -1;
+int journal_idx_partner = 0;
 
 void journal_purge() {
 
@@ -52,7 +53,10 @@ void journal_partner_alloc(pex_uuid_t partner) {
 	int free = journal_partner_find_idx(0x0000);
 	if (free == -1) {
 		// wrap around, kill earliest
+		journal_idx_partner = JOURNAL_MAX_PARTNERS;
 		free = 0;
+	} else {
+		journal_idx_partner += 1;
 	}
 
 	current_partner = partner;

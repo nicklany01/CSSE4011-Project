@@ -477,6 +477,26 @@ void scenes_city_update()
 	}
 }
 
+void scenes_show_wfc_icon(bool show) {
+	if (scenes_state.wfc_icon != NULL && show) {
+		return;
+	}
+
+	if (scenes_state.wfc_icon == NULL && !show) {
+		return;
+	}
+
+	if (show) {
+		scenes_state.wfc_icon = lv_image_create(scenes_state.wfc_icon);
+		lv_obj_set_pos(scenes_state.wfc_icon, 80, 20);
+		lv_image_set_src(scenes_state.wfc_icon, &pet_wfc);
+		return;
+	}
+
+	lv_obj_del(scenes_state.wfc_icon);
+	scenes_state.wfc_icon = NULL;
+}
+
 void scenes_allow_wfc_cb() {
 	lv_obj_del(wfc_button);
 	wfc_button = NULL;

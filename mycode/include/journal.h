@@ -10,6 +10,7 @@
 #define JOURNAL_MAX_ENTRIES 64
 #define JOURNAL_FINISHED_MAGIC_NUM 96
 #define JOURNAL_REQUEST_MAGIC_NUM 127
+#define JOURNAL_PARTNERS_REQUEST_MAGIC_NUM 97
 
 #define JOURNAL_MAX_PARTNERS 6
 
@@ -53,6 +54,9 @@ extern journal_entry_s journal_partner[JOURNAL_MAX_PARTNERS][JOURNAL_MAX_ENTRIES
 
 extern int journal_idx;
 extern int journal_idx_partner;
+
+extern pex_uuid_t journal_partner_lut[JOURNAL_MAX_PARTNERS];
+extern int journal_partner_idx_lut[JOURNAL_MAX_PARTNERS];
 
 void journal_purge();
 int journal_partner_find_idx(pex_uuid_t partner);

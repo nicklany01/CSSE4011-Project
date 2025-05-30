@@ -140,6 +140,8 @@ typedef struct
 	lv_obj_t *stats_screen;
 	sprite_s current_sprite;
 
+	lv_obj_t *wfc_icon;
+
 	bool do_wfc;
 } scene_state_s;
 
@@ -193,7 +195,7 @@ void scenes_add_mini(main_scenes_e scene, pex_uuid_t pex_id, sprite_s sprite);
 void scenes_adjust_minis(character_container_s *character);
 void scenes_remove_mini(main_scenes_e scene, pex_uuid_t pex_id, bool do_reshift);
 void scenes_update_mini_pkt_register(int64_t uptime);
-
+void scenes_show_wfc_icon(bool show);
 void scenes_toggle_sick();
 void scenes_set_temp_from_int_c(int8_t c);
 void scenes_create_scene_switch_button(lv_obj_t *parent);

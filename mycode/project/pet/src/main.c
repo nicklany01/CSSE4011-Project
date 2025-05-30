@@ -149,7 +149,7 @@ void init_personality() {
 
 	//hwinfo_get_device_id((uint8_t *)pet_pex_id, sizeof(pex_uuid_t));
 
-	pet_pex_id = 0xBABE;
+	pet_pex_id = 0xBAB0;
 	my_pet_ppy_pkt.id = pet_pex_id;
 	my_pet_ppy_pkt.sprite = their_pet_ppy_pkt.sprite;
 
@@ -283,6 +283,13 @@ void process_ble_passthru_packet() {
 					k_sem_give(&uart_srvc_lock);
 					break;
 
+				case PET_WFC_CMD_INIT_CONN:
+					scenes_show_wfc_icon(true);
+					break;
+				case PET_WFC_CMD_CLOSE_CONN:
+					scenes_show_wfc_icon(false);
+					break;
+
 				default:
 					break;
 			}
@@ -335,9 +342,7 @@ void process_ble_passthru_packet() {
 
 				for (int i = 0; i < to_tx; i++) {
 
-					my_pex_journal_evt_pkt.index = i == (to_tx - 1)
-						? JOURNAL_FINISHED_MAGIC_NUM
-						: i;
+					my_pex_journal_evt_pkt.index = i;
 
 					my_pex_journal_evt_pkt.id = pet_pex_id;
 
@@ -353,8 +358,33 @@ void process_ble_passthru_packet() {
 					k_sleep(K_MSEC(UART_JOURNAL_TX_COOLDOWN));
 				}
 
-				k_sem_give(&uart_srvc_lock);
+				journal_entry_s *entry;
 
+				for (int i = 0; i < journal_idx_partner; i++) {
+					for (int j = 0; j < journal_partner_idx_lut[i]; j++) {
+						entry = &journal_partner[i][j];
+
+						my_pex_journal_evt_pkt.index = j;
+						my_pex_journal_evt_pkt.id = journal_partner_lut[i];
+
+						journal_dupe_entry(&my_pex_journal_evt_pkt.entry, entry);
+
+						uart_passthru_tx.len = serialize_pet_exchange_journal_evt_pkt(
+						&my_pex_journal_evt_pkt,  uart_passthru_tx.buff);
+
+						os_uart_passthru(&uart_passthru_tx);
+
+						k_sleep(K_MSEC(UART_JOURNAL_TX_COOLDOWN));
+					}
+				}
+
+				my_pex_journal_evt_pkt.index = JOURNAL_FINISHED_MAGIC_NUM;
+
+				uart_passthru_tx.len = serialize_pet_exchange_journal_evt_pkt(
+					&my_pex_journal_evt_pkt,  uart_passthru_tx.buff);
+
+				os_uart_passthru(&uart_passthru_tx);
+				k_sem_give(&uart_srvc_lock);
 				break;
 			}
 
@@ -561,7 +591,7 @@ int main() {
 
 	k_event_init(&game_event_block);
 
-	friends_add_friend(0xBAB0);
+	friends_add_friend(0xBABA);
 
 	tid_uart_handler = k_thread_create(
 		&thread_uart_handler_data,

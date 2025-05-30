@@ -367,6 +367,7 @@ static void os_ble_connected(struct bt_conn *connected, uint8_t err) {
 		int e2 = bt_gatt_discover(pet_wfc_conn, &discover_params);
 		if (e2) {
 			printf("Couldn't begin discovery! %d\r\n", e2);
+			bt_conn_disconnect(pet_wfc_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
 		}
 	} else {
 		os_ble_state.state = OS_BLE_STATE_CONNECTED;
@@ -378,8 +379,7 @@ static void os_ble_connected(struct bt_conn *connected, uint8_t err) {
 static void os_ble_disconnected(struct bt_conn *disconn, uint8_t reason) {
 
 	printf("Disconnected.\r\n");
-	os_ble_state.state = OS_BLE_STATE_ADVERTISE;
-	pet_wfc_state = PET_WFC_NULL;
+	pet_wfc_state = PET_WFC_GOODBYE_M5;
 	targeting = 0;
 
 	bt_conn_unref(pet_wfc_conn);

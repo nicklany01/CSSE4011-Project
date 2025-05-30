@@ -217,6 +217,18 @@ static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
 
 				switch (pet_wfc_state) {
 
+					case PET_WFC_NOTIFY_M5:
+
+						pet_wfc_demo_pkt.cmd_id = PET_WFC_CMD_INIT_CONN;
+						pet_wfc_demo_pkt.cmd_arg = targeting;
+
+						uart_passthru_tx.len = serialize_pet_wfc_demo_cmd_pkt(
+							&pet_wfc_demo_pkt, uart_passthru_tx.buff);
+
+						os_uart_passthru(&uart_passthru_tx);
+						pet_wfc_state = PET_WFC_SEND_HELLO;
+						break;
+
 					case PET_WFC_SEND_HELLO:
 						// we need to tell the other device
 						// that we are a pet
@@ -267,6 +279,20 @@ static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
 							}
 						}
 
+						break;
+
+					case PET_WFC_GOODBYE_M5:
+
+						pet_wfc_demo_pkt.cmd_id = PET_WFC_CMD_CLOSE_CONN;
+						pet_wfc_demo_pkt.cmd_arg = 0;
+
+						uart_passthru_tx.len = serialize_pet_wfc_demo_cmd_pkt(
+							&pet_wfc_demo_pkt, uart_passthru_tx.buff);
+
+						os_uart_passthru(&uart_passthru_tx);
+
+						pet_wfc_state = PET_WFC_NULL;
+						os_ble_state.state = OS_BLE_STATE_SCAN;
 						break;
 
 					default:
