@@ -17,6 +17,8 @@ uint8_t srv_ppy_tx_data[RX_BUFF_SIZE] = {0};
 uint8_t srv_pex_tx_data[RX_BUFF_SIZE] = {0};
 uint8_t srv_wfc_tx_data[RX_BUFF_SIZE] = {0};
 
+bool i_am_the_boss = false;
+
 uint8_t mf_data[MF_DLEN] = {
 
 	MF_ID_HIGH,
@@ -83,6 +85,7 @@ static bool os_ble_is_sienna(struct bt_data *data, void *user_data) {
 
 				if (os_ble_state.state == OS_BLE_STATE_TARGETING && targeting == pex_id) {
 					os_ble_stop_scan();
+					i_am_the_boss = true;
 					int err = bt_conn_le_create((bt_addr_le_t *)user_data, BT_CONN_LE_CREATE_CONN,
 							BT_LE_CONN_PARAM_DEFAULT, &pet_wfc_conn);
 
@@ -347,7 +350,7 @@ static uint8_t os_ble_discover(struct bt_conn *conn,
 		pex_tx_handle = chrc->value_handle;
 
 		os_ble_state.state = OS_BLE_STATE_PET_WFC;
-		pet_wfc_state = PET_WFC_SEND_HELLO;
+		pet_wfc_state = PET_WFC_NOTIFY_M5;
 	}
 
 	return BT_GATT_ITER_STOP;
@@ -385,11 +388,9 @@ static void os_ble_disconnected(struct bt_conn *disconn, uint8_t reason) {
 	}
 
 	printf("Disconnected.\r\n");
-	if (os_ble_state.state == OS_BLE_STATE_PET_WFC) {
-		pet_wfc_state = PET_WFC_GOODBYE_M5;
-	} else {
-		os_ble_state.state = OS_BLE_STATE_SCAN;
-	}
+
+	os_ble_state.state == OS_BLE_STATE_PET_WFC;
+	pet_wfc_state = PET_WFC_GOODBYE_M5;
 }
 
 BT_CONN_CB_DEFINE(conn_callbacks) = {

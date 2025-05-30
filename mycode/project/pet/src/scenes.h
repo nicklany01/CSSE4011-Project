@@ -146,6 +146,7 @@ typedef struct
 	lv_obj_t *wfc_icon;
 
 	bool do_wfc;
+	bool allow_wfc;
 } scene_state_s;
 
 typedef struct
@@ -186,6 +187,8 @@ typedef struct
 extern scene_state_s scenes_state;
 extern mini_timeout_counter_s mini_pkt_register[MINI_PKT_REG_MAX];
 
+void scenes_delete_wfc();
+void scenes_allow_wfc();
 void scenes_init();
 void scenes_draw();
 void scenes_set_time(mod_time_e time);
@@ -193,7 +196,7 @@ void scenes_set_mood(mod_mood_e mood);
 void scenes_set_weather(mod_weather_e weather);
 void scenes_set_main(main_scenes_e scene);
 void scenes_set_sprite(sprite_s sprite);
-
+bool scenes_process_mini_pkt_rx(int64_t last_rx, main_scenes_e scene, pex_uuid_t pex_id, sprite_s sprite);
 void scenes_add_mini(main_scenes_e scene, pex_uuid_t pex_id, sprite_s sprite);
 void scenes_adjust_minis(character_container_s *character);
 void scenes_remove_mini(main_scenes_e scene, pex_uuid_t pex_id, bool do_reshift);

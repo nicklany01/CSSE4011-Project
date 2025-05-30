@@ -16,7 +16,9 @@ scene_state_s scenes_state = {
 	.current_sprite = SPRITE_ZERO,
 	.stats_visible = false,
 	.stats_screen = NULL,
-	.do_wfc = false};
+	.do_wfc = false,
+	.allow_wfc = false
+};
 
 int sprite_face_pos[SPRITE_MAX][2] = {
 	[SPRITE_ZERO] = {POSITION_X_CHAR_FACE, POSITION_Y_CHAR_FACE},
@@ -512,7 +514,7 @@ void scenes_show_wfc_icon(bool show)
 
 	if (show)
 	{
-		scenes_state.wfc_icon = lv_image_create(scenes_state.wfc_icon);
+		scenes_state.wfc_icon = lv_image_create(scenes_state.current_screen);
 		lv_obj_set_pos(scenes_state.wfc_icon, 80, 20);
 		lv_image_set_src(scenes_state.wfc_icon, &pet_wfc);
 		return;
@@ -537,6 +539,8 @@ void scenes_allow_wfc()
 		return;
 	}
 
+	scenes_state.allow_wfc = true;
+
 	wfc_button = lv_button_create(scenes_state.current_screen);
 	lv_obj_set_size(wfc_button, 80, 40);
 	lv_obj_set_pos(wfc_button, 120, 120);
@@ -547,6 +551,17 @@ void scenes_allow_wfc()
 	lv_obj_center(label);
 
 	lv_obj_add_event_cb(wfc_button, scenes_allow_wfc_cb, LV_EVENT_CLICKED, NULL);
+}
+
+void scenes_delete_wfc() {
+	if (wfc_button == NULL) {
+		return;
+	}
+
+	scenes_state.allow_wfc = false;
+
+	lv_obj_del(wfc_button);
+	wfc_button = NULL;
 }
 
 void scenes_set_mood(mod_mood_e mood)
@@ -821,7 +836,7 @@ void scenes_add_mini(main_scenes_e scene, pex_uuid_t pex_id, sprite_s sprite)
 	lv_obj_clear_flag(obj->mini, LV_OBJ_FLAG_HIDDEN);
 }
 
-void scenes_process_mini_pkt_rx(int64_t last_rx, main_scenes_e scene, pex_uuid_t pex_id, sprite_s sprite)
+bool scenes_process_mini_pkt_rx(int64_t last_rx, main_scenes_e scene, pex_uuid_t pex_id, sprite_s sprite)
 {
 
 	mini_timeout_counter_s *counter;
@@ -849,7 +864,7 @@ void scenes_process_mini_pkt_rx(int64_t last_rx, main_scenes_e scene, pex_uuid_t
 			counter->sprite = sprite;
 			counter->last_rx = last_rx;
 
-			return;
+			return false;
 		}
 
 		if (next_free == -1 && counter->pex_id == 0)
@@ -867,6 +882,7 @@ void scenes_process_mini_pkt_rx(int64_t last_rx, main_scenes_e scene, pex_uuid_t
 	counter->last_rx = last_rx;
 
 	scenes_add_mini(counter->scene, counter->pex_id, counter->sprite);
+	return true;
 }
 
 void scenes_init()

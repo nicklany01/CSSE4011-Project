@@ -63,6 +63,8 @@ extern struct k_msgq os_ble_advq;
 extern pex_uuid_t targeting;
 extern struct bt_conn *pet_wfc_conn;
 
+extern bool i_am_the_boss;
+
 bool os_ble_init();
 void os_ble_update_mf_data(uint8_t *new_mf_data);
 void os_ble_write(os_ble_passthru_s *passthru);

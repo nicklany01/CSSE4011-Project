@@ -157,6 +157,17 @@ static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
 	os_ble_passthru_s ble_rx;
 	os_ble_passthru_s ble_tx;
 	os_ble_pet_adv_s pet_adv;
+	bool con_inited = false;
+
+	pet_wfc_demo_pkt.cmd_id = PET_WFC_CMD_CLOSE_CONN;
+	pet_wfc_demo_pkt.cmd_arg = 0;
+	targeting = 0;
+	printf("Goodbye M5!\r\n");
+
+	uart_passthru_tx.len = serialize_pet_wfc_demo_cmd_pkt(
+		&pet_wfc_demo_pkt, uart_passthru_tx.buff);
+
+	os_uart_passthru(&uart_passthru_tx);
 
 	while (true) {
 
@@ -164,6 +175,7 @@ static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
 
 			case OS_BLE_STATE_SCAN:
 
+				con_inited = false;
 				printf("Starting scan...\r\n");
 				os_ble_stop_advertising();
 				os_ble_start_scan();
@@ -226,7 +238,12 @@ static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
 							&pet_wfc_demo_pkt, uart_passthru_tx.buff);
 
 						os_uart_passthru(&uart_passthru_tx);
-						pet_wfc_state = PET_WFC_SEND_HELLO;
+
+						if (i_am_the_boss) {
+							pet_wfc_state = PET_WFC_SEND_HELLO;
+						} else {
+							pet_wfc_state = PET_WFC_WAIT_JOURNAL;
+						}
 						break;
 
 					case PET_WFC_SEND_HELLO:
@@ -305,6 +322,18 @@ static void thread_bluetooth_state_handler(void *a, void *b, void *c) {
 				break;
 
 			case OS_BLE_STATE_CONNECTED:
+
+				if (!con_inited) {
+					pet_wfc_demo_pkt.cmd_id = PET_WFC_CMD_INIT_CONN;
+					pet_wfc_demo_pkt.cmd_arg = targeting;
+
+					uart_passthru_tx.len = serialize_pet_wfc_demo_cmd_pkt(
+						&pet_wfc_demo_pkt, uart_passthru_tx.buff);
+
+					os_uart_passthru(&uart_passthru_tx);
+				}
+				con_inited = true;
+
 
 				if (k_msgq_num_used_get(&os_ble_rxq) > 0) {
 					k_msgq_get(&os_ble_rxq, &ble_rx, K_NO_WAIT);

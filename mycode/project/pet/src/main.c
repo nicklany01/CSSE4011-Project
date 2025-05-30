@@ -108,9 +108,9 @@ pex_uuid_t close_mate = 0x0000;
 #define ACCEL_POLL_PERIOD 500
 
 #define SHAKE_MAGNITUDE_THRESH 3
-#define SHAKE_COUNT_THRESH 10
+#define SHAKE_COUNT_THRESH 6
 
-#define SHAKE_RENDER_LOOPS 8 + 1
+#define SHAKE_RENDER_LOOPS 14
 
 shake_state_s shake_state = {
 	.count = 0,
@@ -508,8 +508,10 @@ static void thread_game_handler(void *a, void *b, void *c)
 		if (game_events & GAME_EVT_OTHER_PET_RSSI)
 		{
 
-			scenes_process_mini_pkt_rx(k_uptime_get(), pet_uart_srvc_rssi_pkt.pex_state.scene,
-									   pet_uart_srvc_rssi_pkt.id, pet_uart_srvc_rssi_pkt.sprite);
+			if (scenes_process_mini_pkt_rx(k_uptime_get(), pet_uart_srvc_rssi_pkt.pex_state.scene,
+				pet_uart_srvc_rssi_pkt.id, pet_uart_srvc_rssi_pkt.sprite)) {
+					goto LBL_SKIP_JOURNAL_LOG;
+				}
 
 			switch (friends_pex_id_is_what(pet_uart_srvc_rssi_pkt.id))
 			{
@@ -524,7 +526,9 @@ static void thread_game_handler(void *a, void *b, void *c)
 				break;
 			}
 
-			if (pet_uart_srvc_rssi_pkt.rssi > -60)
+			LBL_SKIP_JOURNAL_LOG:
+
+			if (pet_uart_srvc_rssi_pkt.rssi > -80)
 			{
 				scenes_allow_wfc();
 				close_mate = pet_uart_srvc_rssi_pkt.id;
@@ -667,6 +671,8 @@ int main()
 
 	display_blanking_off(display_dev);
 
+	int connect_counter = 0;
+
 	while (1)
 	{
 
@@ -690,6 +696,15 @@ int main()
 
 		if (shake_state.rendered > 0) {
 			shake_state.rendered += 1;
+		}
+
+		if (scenes_state.allow_wfc) {
+			connect_counter += 1;
+
+			if (connect_counter == 5) {
+				scenes_delete_wfc();
+				connect_counter = 0;
+			}
 		}
 
 		// get rid of sick for next iter
