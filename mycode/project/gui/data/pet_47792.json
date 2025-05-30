@@ -1,7 +1,7 @@
 {
     "id": 47792,
     "name": "BABO",
-    "sprite": 1,
+    "sprite": 0,
     "expression": 0,
     "energy_threshold": 500,
     "health_threshold": 500,

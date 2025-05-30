@@ -311,20 +311,21 @@ class Pet():
 		print("Sending pet state...")
 		state_pkt = ble.PetPEXStatePkt()
 
-		state_pkt.scene = self.scene.scene
-		state_pkt.scene_weather = self.scene.weather
-		state_pkt.scene_mood = 0
-		state_pkt.scene_time = self.scene.time
-		state_pkt.scene_temp = 0
+		state_list = [self.scene.scene, self.scene.weather, self.scene.time]
+		# state_pkt.scene = self.scene.scene
+		# state_pkt.scene_weather = self.scene.weather
+		# state_pkt.scene_mood = 0
+		# state_pkt.scene_time = self.scene.time
+		# state_pkt.scene_temp = 0
 
-		self.held_food = self.scene.food
-		self.held_drink = self.scene.drink
+		# self.held_food = self.scene.food
+		# self.held_drink = self.scene.drink
 
-		tx_thread = threading.Thread(target=self.tx_send_state, args=(state_pkt,), daemon=True)
+		tx_thread = threading.Thread(target=self.tx_send_state, args=(state_list,), daemon=True)
 		tx_thread.start()
 
-	def tx_send_state(self, state_pkt):
-		asyncio.run(ble.pet_ble_set_state(self.id, state_pkt))
+	def tx_send_state(self, state_list):
+		asyncio.run(ble.pet_ble_set_state(self.id, state_list))
 
 
 	def send_relationships(self, current_friends: list[int], new_friends: list[int], 
