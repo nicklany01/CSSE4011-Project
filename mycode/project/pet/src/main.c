@@ -61,7 +61,9 @@ pet_wfc_rtc_pkt_s pet_wfc_rtc_pkt = {
 
 	.hrs = 13,
 	.mins = 0,
-	.secs = 0};
+	.secs = 0
+
+};
 pet_wfc_weather_pkt_s pet_wfc_weather_pkt;
 
 pet_uart_srvc_rssi_pkt_s pet_uart_srvc_rssi_pkt;
@@ -144,6 +146,10 @@ void init_personality()
 {
 
 	// hwinfo_get_device_id((uint8_t *)pet_pex_id, sizeof(pex_uuid_t));
+	uint8_t device_id[2];
+	hwinfo_get_device_id(device_id, sizeof(device_id));
+	pet_pex_id = device_id[0] << 8 | device_id[1]; 
+	printf("Device ID: 0x%04X\n", pet_pex_id);
 
 	pet_pex_id = 0xBAB0;
 	my_pet_ppy_pkt.id = pet_pex_id;
@@ -174,55 +180,62 @@ void update_personality()
 	scenes_set_sprite(my_pet_ppy_pkt.sprite);
 }
 
+uint16_t get_since_epoch()
+{
+	time_t current = mktime(&time_state_container);
+	return (uint16_t)(current - epoch);
+}
+
 void comms_state_timeout(struct k_timer *timer)
 {
-
-	rtc_get_datetime(&time_state_container.tm_year, &time_state_container.tm_mon,
-					 &time_state_container.tm_mday, &time_state_container.tm_hour,
-					 &time_state_container.tm_min, &time_state_container.tm_sec);
-
-	// update the scene from the RTC
-	if (time_state_container.tm_hour < 6)
-	{
-		scenes_set_time(MOD_TIME_NIGHT);
-	}
-	else if (time_state_container.tm_hour < 12)
-	{
-		scenes_set_time(MOD_TIME_MORNING);
-	}
-	else if (time_state_container.tm_hour < 18)
-	{
-		scenes_set_time(MOD_TIME_AFTERNOON);
-	}
-	else if (time_state_container.tm_hour < 24)
-	{
-		scenes_set_time(MOD_TIME_NIGHT);
-	}
 
 	if (timer == NULL || k_sem_take(&uart_srvc_lock, K_NO_WAIT))
 	{
 		return;
 	}
 
-	struct mood_state local_copy;
-	if (k_mutex_lock(&mood_mutex, K_MSEC(100)) == 0)
+	mod_mood_e mapped_mood = MOD_MOOD_NEUTRAL;
+	switch (pet_mood.expression)
 	{
-		memcpy(&local_copy, &pet_mood, sizeof(local_copy));
-		k_mutex_unlock(&mood_mutex);
+	case EXPRESSION_ENLIGHTENED:
+		mapped_mood = MOD_MOOD_HAPPY;
+		break;
+	case EXPRESSION_V_HAPPY:
+		mapped_mood = MOD_MOOD_HAPPY;
+		break;
+	case EXPRESSION_HAPPY:
+		mapped_mood = MOD_MOOD_HAPPY;
+		break;
+	case EXPRESSION_NEUTRAL:
+		mapped_mood = MOD_MOOD_NEUTRAL;
+		break;
+	case EXPRESSION_SAD:
+		mapped_mood = MOD_MOOD_SAD;
+		break;
+	case EXPRESSION_V_SAD:
+		mapped_mood = MOD_MOOD_SAD;
+		break;
+	case EXPRESSION_ANGRY:
+		mapped_mood = MOD_MOOD_ANGRY;
+		break;
+	case EXPRESSION_SLEEPY:
+		mapped_mood = MOD_MOOD_SLEEPY;
+		break;
+	default:
+		mapped_mood = MOD_MOOD_NEUTRAL;
+		break;
 	}
-	else
-	{
-		return;
-	}
+	scenes_set_mood(mapped_mood);
 
-	pex_state_pkt.scene = scenes_state.main_scene;
-	pex_state_pkt.scene_weather = local_copy.happiness;
-	pex_state_pkt.scene_mood = local_copy.energy
-	pex_state_pkt.scene_time = local_copy.health;
-	pex_state_pkt.scene_temp = local_copy.interaction;
+	pex_state_pkt.scene = (uint8_t)scenes_state.main_scene;
 
-	pex_state_pkt.held_drink = local_copy.expression;
-	pex_state_pkt.held_food = local_copy.affection;
+	pex_state_pkt.scene_weather = (uint8_t)pet_mood.happiness / 4;
+	pex_state_pkt.scene_mood = (uint8_t)pet_mood.energy / 4;
+	pex_state_pkt.scene_time = (uint8_t)pet_mood.health / 4;
+	pex_state_pkt.scene_temp = (uint8_t)pet_mood.interaction / 4;
+
+	pex_state_pkt.held_drink = (uint8_t)pet_mood.expression;
+	pex_state_pkt.held_food = (uint8_t)pet_mood.affection / 4;
 
 	uart_passthru_rx.len = serialize_pet_exchange_state_pkt(&pex_state_pkt, uart_passthru_rx.buff);
 	os_uart_passthru(&uart_passthru_rx);
@@ -231,17 +244,6 @@ void comms_state_timeout(struct k_timer *timer)
 	os_uart_passthru(&uart_passthru_rx);
 
 	k_sem_give(&uart_srvc_lock);
-}
-
-uint16_t get_since_epoch()
-{
-
-	rtc_get_datetime(&time_state_container.tm_year, &time_state_container.tm_mon,
-					 &time_state_container.tm_mday, &time_state_container.tm_hour,
-					 &time_state_container.tm_min, &time_state_container.tm_sec);
-
-	time_t current = mktime(&time_state_container);
-	return (uint16_t)(current - epoch);
 }
 
 void process_ble_passthru_packet()
@@ -679,6 +681,26 @@ int main()
 		// screen refresh 2Hz
 		scenes_draw();
 		k_sleep(K_MSEC(100));
+
+		get_since_epoch();
+
+		// update the scene from the RTC
+		if (time_state_container.tm_hour < 6)
+		{
+			scenes_set_time(MOD_TIME_NIGHT);
+		}
+		else if (time_state_container.tm_hour < 12)
+		{
+			scenes_set_time(MOD_TIME_MORNING);
+		}
+		else if (time_state_container.tm_hour < 18)
+		{
+			scenes_set_time(MOD_TIME_AFTERNOON);
+		}
+		else if (time_state_container.tm_hour < 24)
+		{
+			scenes_set_time(MOD_TIME_NIGHT);
+		}
 
 		if (shake_state.rendered > 0)
 		{

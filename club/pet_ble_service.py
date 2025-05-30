@@ -38,6 +38,13 @@ GAME_EVT_WFC_RX_RTC = None
 
 GAME_RX_JOURNAL = {}
 
+def list_to_bytes(input_list):
+	barray = bytearray()
+	for i in input_list:
+		barray.append(i)
+
+	return barray
+
 class PetBLEAdvDataPos:
 	MF_ID_HIGH = 0
 	MF_ID_LOW = 1
@@ -256,13 +263,13 @@ class PetPEXStatePkt:
 	def __init__(self):
 
 		self.scene = 0
-		self.scene_weather = 0
-		self.scene_mood = 0
-		self.scene_time = 0
-		self.scene_temp = 0
+		self.happiness = 0
+		self.energy = 0
+		self.health = 0
+		self.interaction = 0
 
-		self.held_food = 0
-		self.held_drink = 0
+		self.expression = 0
+		self.affection = 0
 
 	def serialize(self):
 
@@ -270,12 +277,12 @@ class PetPEXStatePkt:
 		tx_bytes.append(PET_PKT_ID.PEX_STATE)
 
 		tx_bytes.append(self.scene)
-		tx_bytes.append(self.scene_weather)
-		tx_bytes.append(self.scene_mood)
-		tx_bytes.append(self.scene_time)
+		tx_bytes.append(self.happiness)
+		tx_bytes.append(self.energy)
+		tx_bytes.append(self.health)
 
-		tx_bytes.append(self.held_food)
-		tx_bytes.append(self.held_drink)
+		tx_bytes.append(self.expression)
+		tx_bytes.append(self.affection)
 
 		return tx_bytes
 
@@ -290,26 +297,26 @@ class PetPEXStatePkt:
 
 		self.scene = barray[offset]
 		offset += 1
-		self.scene_weather = barray[offset]
+		self.happiness = barray[offset]
 		offset += 1
-		self.scene_mood = barray[offset]
+		self.energy = barray[offset]
 		offset += 1
-		self.scene_time = barray[offset]
+		self.health = barray[offset]
 		offset += 1
-		self.scene_temp = barray[offset]
+		self.interaction = barray[offset]
 		offset += 1
 
-		self.held_food = barray[offset]
+		self.expression = barray[offset]
 		offset += 1
-		self.held_drink = barray[offset]
+		self.affection = barray[offset]
 		offset += 1
 
 	def __str__(self):
 
-		return f"""scene: {self.scene} weather: {self.scene_weather}
-mood: {self.scene_mood} time: {self.scene_time}
-temp: {self.scene_temp} held_food: {self.held_food}
-held_drink: {self.held_drink}"""
+		return f"""scene: {self.scene} happiness: {self.happiness}
+energy: {self.energy} health: {self.health}
+interaction: {self.interaction} expression: {self.expression}
+affection: {self.affection}"""
 
 class PetPEXJournalEvtPkt:
 	def __init__(self, entry=PetJournalEntry()):
@@ -429,6 +436,41 @@ async def find_ble_pet(pex_id):
 
 	return sienna_devices[0]
 
+async def discover_moods():
+
+	print("Discovering moods...")
+
+	pex_packets = {}
+
+	devices = await BleakScanner.discover(timeout=3, return_adv=True)
+
+	for device in devices:
+
+		pkt_data = devices[device]
+
+		adv_data = pkt_data[1]
+		mf_data = adv_data.manufacturer_data
+
+		try:
+			pet_md = mf_data[BLE_SIENNA_MF_ID]
+			print(pet_md)
+		except KeyError:
+			continue
+
+		adv_pex_id = (pet_md[PET_BLE_ADV_POS.PEX_ID_HIGH] << 8) | pet_md[PET_BLE_ADV_POS.PEX_ID_LOW]
+
+		pex_packet = PetPEXStatePkt()
+		pex_packet.deserialize(pet_md[2:])
+
+		pex_packets[adv_pex_id] = pex_packet
+
+		print(f"Found pet device {adv_pex_id} {PET_BLE_ADV_POS.PEX_ID_HIGH}")
+
+	if len(pex_packets) == 0:
+		return None
+
+	return pex_packets
+
 async def pet_ble_retrieve_journal(client):
 
 	rtc_request_pkt = PetWFCDemoCmdPkt()
@@ -505,6 +547,8 @@ async def pet_retrieve_rtc(client):
 
 	return BLE_PKT_WFC_RTC_RX.to_date()
 
+PET_SET_DATETIME = datetime.now()
+
 async def pet_retrieve_command(pex_id, command):
 
 	while True:
@@ -545,6 +589,8 @@ async def pet_send_packet(pex_id, packet, uuid):
 		await client.start_notify(BLE_UUID_CHR_PEX_RX, pet_ble_pex_notify_cb)
 		await client.start_notify(BLE_UUID_CHR_WFC_RX, pet_ble_wfc_notify_cb)
 
+		print(packet.serialize())
+
 		await client.write_gatt_char(uuid, packet.serialize(), response=False)
 
 		close_conn = PetWFCDemoCmdPkt()
@@ -556,6 +602,21 @@ async def pet_ble_set_personality(pex_id, ppy_pkt):
 
 	await pet_send_packet(pex_id, ppy_pkt, BLE_UUID_CHR_PPY_TX)
 
+async def pet_set_rtc(pex_id):
+
+	global PET_SET_DATETIME
+
+	rtc_set_pkt = PetWFCRtcPkt()
+	rtc_set_pkt.day = PET_SET_DATETIME.day
+	rtc_set_pkt.month = PET_SET_DATETIME.month
+	rtc_set_pkt.year = PET_SET_DATETIME.year - 1900
+
+	rtc_set_pkt.hrs = PET_SET_DATETIME.hour
+	rtc_set_pkt.mins = PET_SET_DATETIME.minute
+	rtc_set_pkt.secs = PET_SET_DATETIME.second
+
+	await pet_send_packet(pex_id, rtc_set_pkt, BLE_UUID_CHR_WFC_TX)
+
 async def pet_ble_discover_pets():
 
 	return await find_ble_pet(SIENNA_MASTER_PEX)
@@ -564,24 +625,38 @@ async def main():
 
 	await pet_ble_init()
 
+	#print(await discover_moods())
+	#return
+
+	global PET_SET_DATETIME
+
+	PET_SET_DATETIME = datetime(year=2002, day=17, month=3, hour=20)
+
+	await pet_set_rtc(47792)
+
+	time = await pet_retrieve_command(47792, pet_retrieve_rtc)
+	print(time)
+
+	return
+
 	demo_pkt = PetWFCDemoCmdPkt()
 	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_MOOD
 	demo_pkt.cmd_arg = 4
 
-	await pet_send_packet(0xBABE, demo_pkt, BLE_UUID_CHR_WFC_TX)
+	await pet_send_packet(0xBABA, demo_pkt, BLE_UUID_CHR_WFC_TX)
 
 	demo_pkt.cmd_id = PET_WFC_DEMO_CMDS.CHANGE_SCENE
 	demo_pkt.cmd_arg = 0
 
-	await pet_send_packet(0xBABE, demo_pkt, BLE_UUID_CHR_WFC_TX)
+	await pet_send_packet(0xBABA, demo_pkt, BLE_UUID_CHR_WFC_TX)
 
 	ppy_pkt = PetPPYPersonalityPkt()
 	ppy_pkt.randomize()
 
 	ppy_pkt.sprite = 0
-	await pet_ble_set_personality(0xBABE, ppy_pkt)
+	await pet_ble_set_personality(0xBABA, ppy_pkt)
 
-	pet_journal = await pet_retrieve_command(0xBABE, pet_ble_retrieve_journal)
+	pet_journal = await pet_retrieve_command(0xBABA, pet_ble_retrieve_journal)
 
 	for pet in pet_journal:
 		print(f"JOURNAL OF PET {hex(pet)}")
@@ -591,9 +666,6 @@ async def main():
 	print(pets_in_area)
 #
 	#await pet_ble_set_personality(0xBABE, ppy_pkt)
-
-	#time = await pet_retrieve_command(0xBABE, pet_retrieve_rtc)
-	#print(time)
 
 if __name__ == "__main__":
 	asyncio.run(main())

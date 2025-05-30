@@ -81,7 +81,7 @@ static bool os_ble_is_sienna(struct bt_data *data, void *user_data) {
 
 			if (company_id == SIENNA_MF_ID) {
 
-				if (targeting == pex_id) {
+				if (os_ble_state.state == OS_BLE_STATE_TARGETING && targeting == pex_id) {
 					os_ble_stop_scan();
 					int err = bt_conn_le_create((bt_addr_le_t *)user_data, BT_CONN_LE_CREATE_CONN,
 							BT_LE_CONN_PARAM_DEFAULT, &pet_wfc_conn);
@@ -378,17 +378,24 @@ static void os_ble_connected(struct bt_conn *connected, uint8_t err) {
 
 static void os_ble_disconnected(struct bt_conn *disconn, uint8_t reason) {
 
-	printf("Disconnected.\r\n");
-	pet_wfc_state = PET_WFC_GOODBYE_M5;
-	targeting = 0;
+	if (pet_wfc_conn != NULL) {
+		bt_conn_disconnect(pet_wfc_conn, BT_HCI_ERR_REMOTE_USER_TERM_CONN);
+		bt_conn_unref(pet_wfc_conn);
+		pet_wfc_conn = NULL;
+	}
 
-	bt_conn_unref(pet_wfc_conn);
-	pet_wfc_conn = NULL;
+	printf("Disconnected.\r\n");
+	if (os_ble_state.state == OS_BLE_STATE_PET_WFC) {
+		pet_wfc_state = PET_WFC_GOODBYE_M5;
+	} else {
+		os_ble_state.state = OS_BLE_STATE_SCAN;
+	}
 }
 
 BT_CONN_CB_DEFINE(conn_callbacks) = {
 	.connected = os_ble_connected,
 	.disconnected = os_ble_disconnected,
+	//.recycled = os_ble_disconnected
 };
 
 
