@@ -1,0 +1,33 @@
+{
+    "id": 0,
+    "name": "Matt",
+    "sprite": 0,
+    "expression": 0,
+    "energy_threshold": 500,
+    "health_threshold": 500,
+    "interation_threshold": 500,
+    "mood": {
+        "affection": 500,
+        "happiness": 500,
+        "energy": 500,
+        "health": 500,
+        "interaction": 500
+    },
+    "favourites": {
+        "scene": 1,
+        "time": 0,
+        "weather": 0,
+        "food": 1,
+        "drink": 3
+    },
+    "scene": {
+        "scene": 0,
+        "weather": 2,
+        "time": 3,
+        "food": 0,
+        "drink": 0
+    },
+    "friends": [],
+    "enemies": [],
+    "journal": []
+}

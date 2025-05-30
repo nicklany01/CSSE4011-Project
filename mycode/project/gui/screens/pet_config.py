@@ -1,0 +1,188 @@
+import tkinter as tk
+from tkinter import ttk
+from PIL import Image, ImageTk
+
+import pet_setup
+import mapping
+import config
+
+class PetConfig(tk.Frame):
+    def __init__(self, root: tk.Frame, container: tk.Frame, pet: pet_setup.Pet):
+        super().__init__(root, bg=config.COLOUR_BACKGROUND)
+
+        self.root = root
+        self.container = container
+        self.pet = pet
+
+        # Header
+        frm_header = tk.Frame(self, bg=config.COLOUR_ACTIVE)
+        frm_header.pack(padx=20, pady=(20,0), fill="x", expand=True)
+        lbl_header = tk.Label(frm_header, text=f"Pet Personality & Attributes", font=("Consolas", 16, "bold"), bg=config.COLOUR_ACTIVE)
+        lbl_header.pack(ipady=20)
+
+        # Configurable values
+        self.pet_name = tk.StringVar(value=pet.name)
+        self.pet_id = tk.StringVar(value=pet.id)
+        self.ent_sprite = None
+
+        self.ent_threshold = {
+            "Energy Threshold": None,
+            "Health Threshold": None,
+            "Interaction Threshold": None
+        }
+
+        self.ent_faves = {
+            "Scene": {
+                "combobox": None,
+                "values": mapping.scene_map
+            },
+            "Time": {
+                "combobox": None,
+                "values": mapping.time_map
+            },
+            "Weather": {
+                "combobox": None,
+                "values": mapping.weather_map
+            },
+            "Food": {
+                "combobox": None,
+                "values": mapping.food_map
+            },
+            "Drink": {
+                "combobox": None,
+                "values": mapping.drink_map
+            }
+        }
+
+        # self.ent_attributes = {
+        #     "Charisma": None,
+        #     "Confidence": None,
+        #     "Kindness": None,
+        #     "Patience": None,
+        #     "Laziness": None,
+        #     "Rudeness": None,
+        #     "Gaslighting": None,
+        #     "Greediness": None
+        # }
+
+        # Button
+        btn_save = tk.Button(self, text="Send and Save Changes", font=("Consolas", 14, "bold"),
+                             bg=config.COLOUR_BTN_NORMAL, fg="white", activebackground=config.COLOUR_BTN_ACTIVE, relief="groove",
+                             command=self.save_changes, pady=20)
+        btn_save.pack(fill="x", padx=20, pady=20)
+
+        # Personal Details
+        self.frm_personal = tk.Frame(self, bg=config.COLOUR_ACTIVE, padx=20, pady=20)
+        self.frm_personal.pack(fill="x", expand=True, pady=(0, 20), padx=20)
+        tk.Label(self.frm_personal, text="Personal Details", bg=config.COLOUR_ACTIVE, font=("Consolas", 14, "bold")).pack(anchor="w", pady=(0, 10))
+
+        frm_id = tk.Frame(self.frm_personal, bg=config.COLOUR_ACTIVE)
+        valid_entry = root.register(self.validate_entry)
+        tk.Label(frm_id, text="ID", bg=config.COLOUR_ACTIVE, font=("Consolas", 12), width=20, anchor="w").pack(side="left")
+        self.ent_name = tk.Entry(frm_id, textvariable=self.pet_id, validate="key", validatecommand=(valid_entry, "%P"), font=("Consolas", 12)).pack(side="left", fill="x", expand=True)
+        frm_id.pack(fill="x", pady=5)
+        
+        frm_name = tk.Frame(self.frm_personal, bg=config.COLOUR_ACTIVE)
+        tk.Label(frm_name, text="Name", bg=config.COLOUR_ACTIVE, font=("Consolas", 12), width=20, anchor="w").pack(side="left")
+        self.ent_name = tk.Entry(frm_name, textvariable=self.pet_name, font=("Consolas", 12)).pack(side="left", fill="x", expand=True)
+        frm_name.pack(fill="x", pady=5)
+
+        frm_sprite = tk.Frame(self.frm_personal, bg=config.COLOUR_ACTIVE)
+        tk.Label(frm_sprite, text="Sprite", bg=config.COLOUR_ACTIVE, font=("Consolas", 12), width=20, anchor="w").pack(side="left")
+        self.ent_sprite = ttk.Combobox(frm_sprite, values=mapping.sprite_type_map, font=("Consolas", 12), state="readonly")
+        frm_sprite.pack(fill="x", pady=5)
+        self.ent_sprite.pack(side="left", fill="x", expand=True)
+        self.ent_sprite.set(mapping.sprite_type_map[self.pet.sprite])
+
+
+        # Thresholds
+        self.frm_threshold = tk.Frame(self, bg=config.COLOUR_ACTIVE, padx=20, pady=20)
+        self.frm_threshold.pack(fill="x", expand=True, pady=(0, 20), padx=20)
+        tk.Label(self.frm_threshold, text="Thresholds", bg=config.COLOUR_ACTIVE, font=("Consolas", 14, "bold")).pack(anchor="w", pady=(0, 10))
+        for lbl in self.ent_threshold:
+            row = tk.Frame(self.frm_threshold, bg=config.COLOUR_ACTIVE)
+            self.ent_threshold[lbl] = tk.Scale(row, from_=0, to=1000, orient="horizontal",
+                                               resolution=10, length=400, tickinterval=250,
+                                               troughcolor="white", bg=config.COLOUR_INACTIVE,
+                                               highlightthickness=0)
+            row.pack(fill="x", pady=5)
+            tk.Label(row, text=lbl, bg=config.COLOUR_ACTIVE, font=("Consolas", 12)).pack(side="top", anchor="w", pady=5)
+            self.ent_threshold[lbl].pack(side="top", anchor="w", fill="x", expand=True)
+
+        self.ent_threshold["Energy Threshold"].set(self.pet.energy_threshold)
+        self.ent_threshold["Health Threshold"].set(self.pet.health_threshold)
+        self.ent_threshold["Interaction Threshold"].set(self.pet.interation_threshold)
+
+
+        # Favourites
+        self.frm_faves = tk.Frame(self, bg=config.COLOUR_ACTIVE, padx=20, pady=20)
+        self.frm_faves.pack(fill="x", expand=True, pady=(0, 20), padx=20)
+        tk.Label(self.frm_faves, text="Favourites", bg=config.COLOUR_ACTIVE, font=("Consolas", 14, "bold")).pack(anchor="w", pady=(0, 10))
+        for lbl in self.ent_faves:
+            row = tk.Frame(self.frm_faves, bg=config.COLOUR_ACTIVE)
+            self.ent_faves[lbl]["combobox"] = ttk.Combobox(row, values=self.ent_faves[lbl]["values"], font=("Consolas", 12), state="readonly")
+            row.pack(fill="x", pady=5)
+            tk.Label(row, text=lbl, bg=config.COLOUR_ACTIVE, font=("Consolas", 12), width=20, anchor="w").pack(side="left")
+            self.ent_faves[lbl]["combobox"].pack(side="left", fill="x", expand=True)
+
+        self.ent_faves["Scene"]["combobox"].set(mapping.scene_map[self.pet.favourites.scene])
+        self.ent_faves["Time"]["combobox"].set(mapping.time_map[self.pet.favourites.time])
+        self.ent_faves["Weather"]["combobox"].set(mapping.weather_map[self.pet.favourites.weather])
+        self.ent_faves["Food"]["combobox"].set(mapping.food_map[self.pet.favourites.food])
+        self.ent_faves["Drink"]["combobox"].set(mapping.drink_map[self.pet.favourites.drink])
+
+        # Attributes
+        # self.frm_attributes = tk.Frame(self, bg=config.COLOUR_ACTIVE, padx=20, pady=20)
+        # self.frm_attributes.pack(fill="x", expand=True, pady=(0, 20), padx=20)
+        # tk.Label(self.frm_attributes, text="Personality Attribute Levels", bg=config.COLOUR_ACTIVE, font=("Consolas", 14, "bold")).pack(anchor="w", pady=(0, 10))
+        # for lbl in self.ent_attributes:
+        #     row = tk.Frame(self.frm_attributes, bg=config.COLOUR_ACTIVE)
+        #     row.pack(fill="x", pady=5)
+        #     tk.Label(row, text=lbl, bg=config.COLOUR_ACTIVE, font=("Consolas", 12)).pack(side="top", anchor="w", pady=5)
+        #     self.ent_attributes[lbl] = tk.Scale(row, from_=0, to=5, orient="horizontal",
+        #                                        resolution=1, length=400, tickinterval=1,
+        #                                        troughcolor="white", bg=config.COLOUR_INACTIVE,
+        #                                        highlightthickness=0)
+        #     self.ent_attributes[lbl].pack(side="top", anchor="w", fill="x", expand=True)
+
+        # self.ent_attributes["Charisma"].set(self.pet.attributes.charisma)
+        # self.ent_attributes["Confidence"].set(self.pet.attributes.confidence)
+        # self.ent_attributes["Kindness"].set(self.pet.attributes.kindness)
+        # self.ent_attributes["Patience"].set(self.pet.attributes.patience)
+        # self.ent_attributes["Laziness"].set(self.pet.attributes.lazy)
+        # self.ent_attributes["Rudeness"].set(self.pet.attributes.rude)
+        # self.ent_attributes["Gaslighting"].set(self.pet.attributes.gaslight)
+        # self.ent_attributes["Greediness"].set(self.pet.attributes.greedy)
+
+    def validate_entry(self, value: str):
+        return value.isdigit() or value == ""
+    
+    def save_changes(self):
+        name = self.pet_name.get()
+        id = self.pet_id.get()
+        sprite = self.ent_sprite.get()
+        energy_threshold = self.ent_threshold["Energy Threshold"].get()
+        health_threshold = self.ent_threshold["Health Threshold"].get()
+        interaction_threshold = self.ent_threshold["Interaction Threshold"].get()
+        fav_scene = self.ent_faves["Scene"]["combobox"].get()
+        fav_time = self.ent_faves["Time"]["combobox"].get()
+        fav_weather = self.ent_faves["Weather"]["combobox"].get()
+        fav_food = self.ent_faves["Food"]["combobox"].get()
+        fav_drink = self.ent_faves["Drink"]["combobox"].get()
+        # attr_charisma = self.ent_attributes["Charisma"].get()
+        # attr_confidence = self.ent_attributes["Confidence"].get()
+        # attr_kindness = self.ent_attributes["Kindness"].get()
+        # attr_patience = self.ent_attributes["Patience"].get()
+        # attr_lazy = self.ent_attributes["Laziness"].get()
+        # attr_rude = self.ent_attributes["Rudeness"].get()
+        # attr_gaslight = self.ent_attributes["Gaslighting"].get()
+        # attr_greedy = self.ent_attributes["Greediness"].get()
+
+        self.pet.update_config(name, id, sprite, energy_threshold, health_threshold, interaction_threshold,
+                               fav_scene, fav_time, fav_weather, fav_food, fav_drink)
+        
+        self.container.img_banner = ImageTk.PhotoImage(Image.open(f"assets/sprites/sprite_{mapping.sprite_type_map[self.pet.sprite]}_{mapping.expr_map[self.pet.expression]}.png").resize((150, 150)))
+        self.container.cvs_bg.create_image(500, 15, image=self.container.img_banner, anchor="ne")
+
+        self.pet.send_personality()
+        self.pet.save_config()

@@ -8,15 +8,6 @@ arduino_serial: &uart1 {
 
 / {
 	aliases {
-		u1 = &uart0;
-	};
-
-
-	chosen {
-		zephyr,console = &arduino_serial;
-		zephyr,shell-uart = &arduino_serial;
-		zephyr,uart-mcumgr = &arduino_serial;
-		zephyr,bt-mon-uart = &arduino_serial;
-		zephyr,bt-c2h-uart = &arduino_serial;
+		u1 = &arduino_serial;
 	};
 };

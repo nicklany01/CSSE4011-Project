@@ -1,0 +1,45 @@
+{
+    "id": 47806,
+    "name": "Cam",
+    "sprite": 1,
+    "expression": 6,
+    "energy_threshold": 500,
+    "health_threshold": 590,
+    "interation_threshold": 500,
+    "mood": {
+        "affection": 500,
+        "happiness": 800,
+        "energy": 200,
+        "health": 700,
+        "interaction": 450
+    },
+    "favourites": {
+        "scene": 1,
+        "time": 0,
+        "weather": 0,
+        "food": 8,
+        "drink": 4
+    },
+    "scene": {
+        "scene": 1,
+        "time": 0,
+        "weather": 0,
+        "food": 0,
+        "drink": 0
+    },
+    "friends": [
+        1,
+        0
+    ],
+    "enemies": [],
+    "journal": [
+        [
+            0,
+            0
+        ],
+        [
+            10,
+            7
+        ]
+    ]
+}
