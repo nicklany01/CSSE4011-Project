@@ -130,7 +130,7 @@ static void feed_button_cb(lv_event_t *e)
 void scenes_create_scene_switch_button(lv_obj_t *parent)
 {
 	lv_obj_t *btn = lv_button_create(parent);
-	lv_obj_set_size(btn, 100, 50);
+	lv_obj_set_size(btn, 100, 40);
 	lv_obj_align(btn, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
 	lv_obj_t *label = lv_label_create(btn);
 	lv_label_set_text(label, "Next Scene");
@@ -141,8 +141,8 @@ void scenes_create_scene_switch_button(lv_obj_t *parent)
 void scenes_create_feed_button(lv_obj_t *parent)
 {
 	lv_obj_t *btn = lv_button_create(parent);
-	lv_obj_set_size(btn, 100, 50);
-	lv_obj_align(btn, LV_ALIGN_BOTTOM_MID, 0, 0);
+	lv_obj_set_size(btn, 100, 40);
+	lv_obj_align(btn, LV_ALIGN_BOTTOM_MID, 0, -10);
 	lv_obj_t *label = lv_label_create(btn);
 	lv_label_set_text(label, "Feed Me!");
 	lv_obj_center(label);
@@ -152,7 +152,7 @@ void scenes_create_feed_button(lv_obj_t *parent)
 void scenes_create_stats_button(lv_obj_t *parent)
 {
 	lv_obj_t *btn = lv_button_create(parent);
-	lv_obj_set_size(btn, 80, 40);
+	lv_obj_set_size(btn, 100, 40);
 	lv_obj_align(btn, LV_ALIGN_BOTTOM_LEFT, 10, -10);
 	lv_obj_t *label = lv_label_create(btn);
 	lv_label_set_text(label, "Stats");
@@ -384,6 +384,7 @@ void scenes_forest_init()
 	lv_obj_set_pos(scene_forest.background, 0, 0);
 	scenes_create_scene_switch_button(scene_forest.screen);
 	scenes_create_stats_button(scene_forest.screen);
+	scenes_create_feed_button(scene_forest.screen);
 }
 
 void scenes_meadow_init()
@@ -393,6 +394,7 @@ void scenes_meadow_init()
 	lv_obj_set_pos(scene_meadow.background, 0, 0);
 	scenes_create_scene_switch_button(scene_meadow.screen);
 	scenes_create_stats_button(scene_meadow.screen);
+	scenes_create_feed_button(scene_meadow.screen);
 }
 
 void scenes_beach_init()
@@ -402,6 +404,7 @@ void scenes_beach_init()
 	lv_obj_set_pos(scene_beach.background, 0, 0);
 	scenes_create_scene_switch_button(scene_beach.screen);
 	scenes_create_stats_button(scene_beach.screen);
+	scenes_create_feed_button(scene_beach.screen);
 }
 
 void scenes_shop_init()
@@ -411,6 +414,7 @@ void scenes_shop_init()
 	lv_obj_set_pos(scene_shop.background, 0, 0);
 	scenes_create_scene_switch_button(scene_shop.screen);
 	scenes_create_stats_button(scene_shop.screen);
+	scenes_create_feed_button(scene_shop.screen);
 }
 
 void scenes_city_init()
@@ -420,6 +424,7 @@ void scenes_city_init()
 	lv_obj_set_pos(scene_city.background, 0, 0);
 	scenes_create_scene_switch_button(scene_city.screen);
 	scenes_create_stats_button(scene_city.screen);
+	scenes_create_feed_button(scene_city.screen);
 }
 
 lv_obj_t *wfc_button = NULL;

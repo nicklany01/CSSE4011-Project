@@ -1,24 +1,24 @@
 {
-    "id": 1,
-    "name": "Nic",
-    "sprite": 2,
+    "id": 47792,
+    "name": "BABO",
+    "sprite": 0,
     "expression": 3,
-    "energy_threshold": 450,
+    "energy_threshold": 500,
     "health_threshold": 500,
     "interation_threshold": 500,
     "mood": {
-        "affection": 500,
-        "happiness": 500,
-        "energy": 500,
-        "health": 500,
-        "interaction": 500
+        "affection": 6,
+        "happiness": 0,
+        "energy": 0,
+        "health": 0,
+        "interaction": 0
     },
     "favourites": {
-        "scene": 0,
+        "scene": 1,
         "time": 0,
         "weather": 0,
-        "food": 0,
-        "drink": 0
+        "food": 1,
+        "drink": 3
     },
     "scene": {
         "scene": 0,
@@ -28,8 +28,6 @@
         "drink": 0
     },
     "friends": [],
-    "enemies": [
-        2
-    ],
+    "enemies": [],
     "journal": []
 }

@@ -1,6 +1,6 @@
 {
     "id": 47806,
-    "name": "Cam",
+    "name": "BABE",
     "sprite": 1,
     "expression": 6,
     "energy_threshold": 500,
@@ -32,14 +32,5 @@
         0
     ],
     "enemies": [],
-    "journal": [
-        [
-            0,
-            0
-        ],
-        [
-            10,
-            7
-        ]
-    ]
+    "journal": []
 }

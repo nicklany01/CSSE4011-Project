@@ -1,5 +1,5 @@
 {
-    "id": 0,
+    "id": 88,
     "name": "Matt",
     "sprite": 0,
     "expression": 0,
@@ -22,8 +22,8 @@
     },
     "scene": {
         "scene": 0,
-        "weather": 2,
         "time": 3,
+        "weather": 2,
         "food": 0,
         "drink": 0
     },

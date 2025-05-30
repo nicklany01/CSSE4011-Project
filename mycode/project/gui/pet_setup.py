@@ -101,11 +101,11 @@ class Pet():
 				self.enemies.append(enemy)
 
 			self.journal: club.pet_app_helpers.PetJournal = club.pet_app_helpers.PetJournal()
-			journal_entry = club.pet_app_helpers.PetJournalEntry()
-			for time, event in pet_config["journal"]:
-				journal_entry.timestamp = time
-				journal_entry.event = event
-				self.journal.add(journal_entry)
+			# journal_entry = club.pet_app_helpers.PetJournalEntry()
+			# for time, event in pet_config["journal"]:
+			# 	journal_entry.timestamp = time
+			# 	journal_entry.event = event
+			# 	self.journal.add(journal_entry)
 
 		except Exception as e:
 			print(f"Error: Could not properly load pet from '{file_path}': {e}")
@@ -250,31 +250,26 @@ class Pet():
 		for pet_id in pet_journals:
 			print(f"JOURNAL OF PET {hex(pet_id)}")
 			print(pet_journals[pet_id])
+
 			for pet in pets:
 				if pet.id == pet_id:
-					pet.journal = pet_journals[pet_id]
-					break
-	
+					self.journal = ble.PetJournal()
+					journal_times = []
 
-	async def ble_update_personality(self):
-		await ble.pet_ble_init()
+					for entry in pet_journals[pet_id].entries:
+						if entry.timestamp not in journal_times:
+							journal_times.append(entry.timestamp)
+							self.journal.add(entry)
 
-		print(f"Getting personality for {hex(self.id)}")
-		personality = await ble.pet_retrieve_command(self.id, ble.pet_ble_retrieve_personality)
 
-		if personality is None:
-			print(f"Couldn't find personality for {hex(self.id)}")
-			return
-		
-		self.mood.affection = personality.affection
-		self.mood.happiness = personality.happiness
-		self.mood.energy = personality.energy
-		self.mood.health = personality.health
-		self.mood.interaction = personality.interaction
-		self.expression = personality.expression
+			# for pet in pets:
+			# 	if pet.id == pet_id:
+			# 		pet.journal = pet_journals[pet_id]
+			# 		break
 
 	
 	def send_personality(self):
+		print("Sending pet personality...")
 		ppy_pkt = ble.PetPPYPersonalityPkt()
 		ppy_pkt.randomize()
 
@@ -298,25 +293,26 @@ class Pet():
 		print("Sending pet state...")
 		state_pkt = ble.PetPEXStatePkt()
 
-		state_pkt.scene = self.scene.scene
-		state_pkt.scene_weather = self.scene.weather
-		state_pkt.scene_mood = 0
-		state_pkt.scene_time = self.scene.time
-		state_pkt.scene_temp = 0
+		state_list = [self.scene.scene, self.scene.weather, self.scene.time]
+		# state_pkt.scene = self.scene.scene
+		# state_pkt.scene_weather = self.scene.weather
+		# state_pkt.scene_mood = 0
+		# state_pkt.scene_time = self.scene.time
+		# state_pkt.scene_temp = 0
 
-		self.held_food = self.scene.food
-		self.held_drink = self.scene.drink
+		# self.held_food = self.scene.food
+		# self.held_drink = self.scene.drink
 
-		tx_thread = threading.Thread(target=self.tx_send_state, args=(state_pkt,), daemon=True)
+		tx_thread = threading.Thread(target=self.tx_send_state, args=(state_list,), daemon=True)
 		tx_thread.start()
 
-	def tx_send_state(self, state_pkt):
-		asyncio.run(ble.pet_ble_set_state(self.id, state_pkt))
+	def tx_send_state(self, state_list):
+		asyncio.run(ble.pet_ble_set_state(self.id, state_list))
 
 
 	def send_relationships(self, current_friends: list[int], new_friends: list[int], 
 						current_enemies: list[int], new_enemies: list[int]):
-		print("Updating relationships")
+		print("Updating relationships...")
 
 		add_friends = []
 		remove_friends = []
